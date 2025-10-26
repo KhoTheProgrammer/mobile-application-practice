@@ -1,6 +1,6 @@
 package com.example.myapplication.ui.theme
 
-import android.app.Activity
+
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -13,26 +13,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = PrimaryBlue,
+    onPrimary = Color.White,
+    surface = SurfaceDark,
+    onSurface = OnSurfaceGray,
+    background = BackgroundDark,
+    onBackground = OnBackgroundWhite
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-    background = Color(0xADFFFBFE)
-
-//    /* Other default colors to override
-//    background = Color(0xFFFFFBFE),
-//    surface = Color(0xFFFFFBFE),
-//    onPrimary = Color.White,
-//    onSecondary = Color.White,
-//    onTertiary = Color.White,
-//    onBackground = Color(0xFF1C1B1F),
-//    onSurface = Color(0xFF1C1B1F),
-//    */
+    primary = PrimaryBlue,
+    onPrimary = Color.White,
+    surface = LightSurface,
+    onSurface = OnLigtSurface,
+    background = LightBackground,
+    onBackground = OnLightBackground
 )
 
 @Composable
