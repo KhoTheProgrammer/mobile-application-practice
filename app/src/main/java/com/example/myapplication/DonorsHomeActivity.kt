@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,24 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MyApplicationTheme
 
-class DonorHomeActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MyApplicationTheme(darkTheme = true) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    DonorHomeScreen()
-                }
-            }
-        }
-    }
-}
-
 @Composable
-fun DonorHomeScreen() {
+fun DonorHomeScreen(onOrphanageClick: () -> Unit = {}) {
     var searchQuery by remember { mutableStateOf("") }
 
     val gradient = Brush.verticalGradient(
@@ -109,7 +94,7 @@ fun DonorHomeScreen() {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        FeaturedOrphanagesSection()
+        FeaturedOrphanagesSection(onOrphanageClick = onOrphanageClick)
     }
 }
 
@@ -283,7 +268,7 @@ fun CategoryItem(category: Category) {
 }
 
 @Composable
-fun FeaturedOrphanagesSection() {
+fun FeaturedOrphanagesSection(onOrphanageClick: () -> Unit = {}) {
     val orphanages = listOf(
         Orphanage(
             "Hope Children's Home",
@@ -315,13 +300,13 @@ fun FeaturedOrphanagesSection() {
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(orphanages) { orphanage ->
-            OrphanageItem(orphanage = orphanage)
+            OrphanageItem(orphanage = orphanage, onClick = onOrphanageClick)
         }
     }
 }
 
 @Composable
-fun OrphanageItem(orphanage: Orphanage) {
+fun OrphanageItem(orphanage: Orphanage, onClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .width(280.dp)
@@ -395,7 +380,7 @@ fun OrphanageItem(orphanage: Orphanage) {
 
             // Donate Button
             Button(
-                onClick = { /* Handle donate action */ },
+                onClick = onClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp),
@@ -406,7 +391,7 @@ fun OrphanageItem(orphanage: Orphanage) {
                 )
             ) {
                 Text(
-                    text = "Donate Now",
+                    text = "View Orphanage",
                     fontWeight = FontWeight.SemiBold
                 )
             }
