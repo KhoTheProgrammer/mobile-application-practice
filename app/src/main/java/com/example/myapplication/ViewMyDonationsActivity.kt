@@ -1,0 +1,374 @@
+package com.example.myapplication
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.myapplication.ui.theme.MyApplicationTheme
+
+// Data class for donation items
+data class Donation(
+    val id: String,
+    val orphanageName: String,
+    val itemCategory: String,
+    val itemSubcategory: String,
+    val status: DonationStatus,
+    val daysAgo: Int,
+    val condition: String,
+    val description: String = ""
+)
+
+enum class DonationStatus(val displayName: String, val color: Color) {
+    PENDING("Pending", Color(0xFFFF9800)),
+    IN_TRANSIT("In Transit", Color(0xFF2196F3)),
+    RECEIVED("Received", Color(0xFF4CAF50)),
+    CANCELLED("Cancelled", Color(0xFFF44336))
+}
+
+class ViewMyDonationsActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            MyApplicationTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    ViewMyDonationsScreen()
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ViewMyDonationsScreen(onBackClick: () -> Unit = {}) {
+    var searchQuery by remember { mutableStateOf("") }
+    
+    // Sample donation data - replace with actual data from your backend/database
+    val sampleDonations = remember {
+        listOf(
+            Donation(
+                id = "1",
+                orphanageName = "Hope Children's Home",
+                itemCategory = "Clothes",
+                itemSubcategory = "Children's Clothing",
+                status = DonationStatus.RECEIVED,
+                daysAgo = 3,
+                condition = "Good Condition",
+                description = "Winter jackets and sweaters"
+            ),
+            Donation(
+                id = "2",
+                orphanageName = "Sunshine Orphanage",
+                itemCategory = "Books",
+                itemSubcategory = "Educational",
+                status = DonationStatus.PENDING,
+                daysAgo = 1,
+                condition = "Like New",
+                description = "Mathematics and Science textbooks"
+            ),
+            Donation(
+                id = "3",
+                orphanageName = "Little Angels Home",
+                itemCategory = "Toys",
+                itemSubcategory = "Educational Toys",
+                status = DonationStatus.IN_TRANSIT,
+                daysAgo = 5,
+                condition = "Brand New",
+                description = "Building blocks and puzzles"
+            ),
+            Donation(
+                id = "4",
+                orphanageName = "St. Mary's Children Center",
+                itemCategory = "Food",
+                itemSubcategory = "Canned Food",
+                status = DonationStatus.RECEIVED,
+                daysAgo = 7,
+                condition = "Brand New",
+                description = "Canned vegetables and fruits"
+            ),
+            Donation(
+                id = "5",
+                orphanageName = "Rainbow Kids Home",
+                itemCategory = "Electronics",
+                itemSubcategory = "Tablets",
+                status = DonationStatus.CANCELLED,
+                daysAgo = 10,
+                condition = "Good Condition",
+                description = "Educational tablets for learning"
+            )
+        )
+    }
+    
+    // Filter donations based on search query
+    val filteredDonations = remember(searchQuery, sampleDonations) {
+        if (searchQuery.isBlank()) {
+            sampleDonations
+        } else {
+            sampleDonations.filter { donation ->
+                donation.orphanageName.contains(searchQuery, ignoreCase = true) ||
+                donation.itemCategory.contains(searchQuery, ignoreCase = true) ||
+                donation.itemSubcategory.contains(searchQuery, ignoreCase = true) ||
+                donation.status.displayName.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.History,
+                contentDescription = "Donations History",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "My Donations",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+
+        // Search Bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 20.dp),
+            placeholder = { Text("Search donations...") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            trailingIcon = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { searchQuery = "" }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear search",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            shape = RoundedCornerShape(16.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+            )
+        )
+
+        // Donations List
+        if (filteredDonations.isEmpty()) {
+            // Empty state
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.SearchOff,
+                    contentDescription = "No donations found",
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = if (searchQuery.isBlank()) "No donations yet" else "No donations found",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = if (searchQuery.isBlank()) "Start making a difference today!" else "Try a different search term",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filteredDonations) { donation ->
+                    DonationCard(donation = donation)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DonationCard(donation: Donation) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            // Header with orphanage name and status
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = donation.orphanageName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                
+                // Status Badge
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = donation.status.color.copy(alpha = 0.1f)
+                ) {
+                    Text(
+                        text = donation.status.displayName,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = donation.status.color,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Item details
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = getIconForCategory(donation.itemCategory),
+                    contentDescription = donation.itemCategory,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "${donation.itemCategory} - ${donation.itemSubcategory}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            if (donation.description.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = donation.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Footer with condition and time
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Condition",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = donation.condition,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = "Time",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "${donation.daysAgo} ${if (donation.daysAgo == 1) "day" else "days"} ago",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun getIconForCategory(category: String) = when (category.lowercase()) {
+    "food" -> Icons.Default.Restaurant
+    "clothes" -> Icons.Default.Checkroom
+    "furniture" -> Icons.Default.Chair
+    "books" -> Icons.Default.MenuBook
+    "toys" -> Icons.Default.Toys
+    "electronics" -> Icons.Default.Devices
+    else -> Icons.Default.CardGiftcard
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ViewMyDonationsScreenPreview() {
+    MyApplicationTheme {
+        ViewMyDonationsScreen()
+    }
+}
