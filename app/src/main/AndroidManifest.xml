@@ -13,15 +13,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
-        <activity
-            android:name=".DonorHomeActivity"
-            android:exported="false"
-            android:theme="@style/Theme.MyApplication" />
-        <activity
-            android:name=".LoginActivity"
-            android:exported="false"
-            android:label="Login"
-            android:theme="@style/Theme.MyApplication" />
+        <!-- Modern single-activity architecture with Jetpack Navigation Compose -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
