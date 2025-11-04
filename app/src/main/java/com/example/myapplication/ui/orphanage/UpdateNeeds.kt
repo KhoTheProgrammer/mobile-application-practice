@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.myapplication.ui.orphanage
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -9,33 +9,22 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.data.model.donor.OrphanageNeed
 import com.example.myapplication.ui.theme.MyApplicationTheme
 
 // Data class for orphanage needs
-data class OrphanageNeed(
-    val id: String,
-    val category: String,
-    val subcategory: String,
-    val description: String,
-    val quantity: String,
-    val urgency: Urgency,
-    val dateAdded: String,
-    val isActive: Boolean = true
-)
+
 
 enum class Urgency(val displayName: String, val color: Color) {
     LOW("Low Priority", Color(0xFF4CAF50)),
@@ -59,19 +48,6 @@ class UpdateNeedsActivity : ComponentActivity() {
         }
     }
 }
-
-//fun getIconForCategory(category: String): ImageVector {
-//    return when (category) {
-//        "Food" -> Icons.Default.Fastfood
-//        "Clothes" -> Icons.Default.Checkroom
-//        "Books" -> Icons.AutoMirrored.Filled.MenuBook
-//        "Medical" -> Icons.Default.MedicalServices
-//        "Furniture" -> Icons.Default.Deck
-//        "Toys" -> Icons.Default.Toys
-//        "Electronics" -> Icons.Default.ElectricalServices
-//        else -> Icons.Default.Category
-//    }
-//}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -394,7 +370,9 @@ fun NeedCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        imageVector = getIconForCategory(need.category),
+                        imageVector = _root_ide_package_.com.example.myapplication.ui.donor.getIconForCategory(
+                            need.category
+                        ),
                         contentDescription = need.category,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)

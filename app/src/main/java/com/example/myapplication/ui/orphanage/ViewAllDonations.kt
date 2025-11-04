@@ -1,4 +1,4 @@
-package com.example.myapplication
+package com.example.myapplication.ui.orphanage
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,7 +34,7 @@ data class IncomingDonation(
     val itemSubcategory: String,
     val itemDescription: String,
     val condition: String,
-    val status: DonationStatus,
+    val status: com.example.myapplication.ui.donor.DonationStatus,
     val submittedDate: String,
     val estimatedDelivery: String,
     val pickupAddress: String,
@@ -216,7 +215,9 @@ fun IncomingDonationCard(donation: IncomingDonation) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = getIconForCategory(donation.itemCategory),
+                    imageVector = _root_ide_package_.com.example.myapplication.ui.donor.getIconForCategory(
+                        donation.itemCategory
+                    ),
                     contentDescription = donation.itemCategory,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
@@ -284,7 +285,7 @@ fun IncomingDonationCard(donation: IncomingDonation) {
             Spacer(modifier = Modifier.height(12.dp))
 
             // Action buttons (only for pending donations)
-            if (donation.status == DonationStatus.PENDING) {
+            if (donation.status == _root_ide_package_.com.example.myapplication.ui.donor.DonationStatus.PENDING) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -330,7 +331,7 @@ fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
                 itemSubcategory = "Grains",
                 itemDescription = "50kg rice, 20kg maize flour, cooking oil",
                 condition = "Brand New",
-                status = DonationStatus.PENDING,
+                status = _root_ide_package_.com.example.myapplication.ui.donor.DonationStatus.PENDING,
                 submittedDate = "2024-01-15",
                 estimatedDelivery = "2024-01-17",
                 pickupAddress = "Area 25, Lilongwe",
@@ -345,7 +346,7 @@ fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
                 itemSubcategory = "Children's Clothing",
                 itemDescription = "Winter jackets, sweaters, school uniforms",
                 condition = "Good Condition",
-                status = DonationStatus.IN_TRANSIT,
+                status = _root_ide_package_.com.example.myapplication.ui.donor.DonationStatus.IN_TRANSIT,
                 submittedDate = "2024-01-14",
                 estimatedDelivery = "2024-01-16",
                 pickupAddress = "Area 47, Lilongwe",
@@ -360,7 +361,7 @@ fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
                 itemSubcategory = "Educational",
                 itemDescription = "Mathematics and English textbooks for primary school",
                 condition = "Like New",
-                status = DonationStatus.RECEIVED,
+                status = _root_ide_package_.com.example.myapplication.ui.donor.DonationStatus.RECEIVED,
                 submittedDate = "2024-01-13",
                 estimatedDelivery = "2024-01-15",
                 pickupAddress = "City Centre, Blantyre",
@@ -375,7 +376,7 @@ fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
                 itemSubcategory = "Educational Toys",
                 itemDescription = "Building blocks, puzzles, educational games",
                 condition = "Brand New",
-                status = DonationStatus.PENDING,
+                status = _root_ide_package_.com.example.myapplication.ui.donor.DonationStatus.PENDING,
                 submittedDate = "2024-01-16",
                 estimatedDelivery = "2024-01-18",
                 pickupAddress = "Ndirande, Blantyre",
@@ -390,7 +391,7 @@ fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
                 itemSubcategory = "Tablets",
                 itemDescription = "5 educational tablets with learning apps",
                 condition = "Good Condition",
-                status = DonationStatus.CANCELLED,
+                status = _root_ide_package_.com.example.myapplication.ui.donor.DonationStatus.CANCELLED,
                 submittedDate = "2024-01-12",
                 estimatedDelivery = "2024-01-14",
                 pickupAddress = "Mzuzu City",
