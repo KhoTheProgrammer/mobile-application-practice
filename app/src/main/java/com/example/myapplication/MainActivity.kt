@@ -1,6 +1,5 @@
 package com.example.myapplication
 
-import android.content.Intent
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.offset
@@ -49,6 +48,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.compose.rememberNavController
+import com.example.myapplication.navigation.NavGraph
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import androidx.compose.foundation.layout.BoxScope
 
@@ -56,12 +57,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MyApplicationTheme(darkTheme = true) {
+            MyApplicationTheme() {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    BeautifulLandingPage()
+                    val navController = rememberNavController()
+                    NavGraph(navController = navController)
                 }
             }
         }
@@ -69,8 +71,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun BeautifulLandingPage() {
-    val context = LocalContext.current
+fun BeautifulLandingPage(onGetStartedClick: () -> Unit = {}) {
     val gradient = Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -217,9 +218,7 @@ fun BeautifulLandingPage() {
 
                 // Get Started Button - SIMPLIFIED VERSION
                 Button(
-                    onClick = {
-                        context.startActivity(Intent(context, LoginActivity::class.java))
-                    },
+                    onClick = onGetStartedClick,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
