@@ -4,7 +4,16 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.myapplication.*
+import com.example.myapplication.ui.donor.DonationFormScreen
+import com.example.myapplication.ui.donor.DonorHomeScreen
+import com.example.myapplication.ui.LandingPage
+import com.example.myapplication.ui.auth.LoginScreen
+import com.example.myapplication.ui.donor.OrphanageDetailScreen
+import com.example.myapplication.ui.orphanage.OrphanageHomeScreen
+import com.example.myapplication.ui.orphanage.UpdateNeedsScreen
+import com.example.myapplication.ui.orphanage.ViewAllDonationsScreen
+import com.example.myapplication.ui.donor.ViewMyDonationsScreen
+import com.example.myapplication.ui.donor.ThankYouScreen
 
 // Define all routes as a sealed class for type safety
 sealed class Screen(val route: String) {
@@ -30,7 +39,7 @@ fun NavGraph(
         startDestination = startDestination
     ) {
         composable(Screen.Landing.route) {
-            BeautifulLandingPage(
+            LandingPage(
                 onGetStartedClick = {
                     navController.navigate(Screen.Login.route)
                 }
