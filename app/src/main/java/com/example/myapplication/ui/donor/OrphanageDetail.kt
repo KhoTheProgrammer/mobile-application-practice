@@ -22,9 +22,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.components.CustomAppBar
+import com.example.myapplication.ui.components.AppBarAction
 
 @Composable
-fun OrphanageDetailScreen(onDonateClick: () -> Unit = {}) {
+fun OrphanageDetailScreen(
+    onBackClick: () -> Unit = {},
+    onDonateClick: () -> Unit = {}
+) {
     val orphanage = OrphanageDetail(
         name = "Hope Children's Home",
         description = "Hope Children's Home has been providing shelter, education, and care to orphaned and vulnerable children since 2010. We believe every child deserves a loving home and quality education to build a better future.",
@@ -47,28 +52,45 @@ fun OrphanageDetailScreen(onDonateClick: () -> Unit = {}) {
         NeededItem("Blankets", 35.0, "pieces", UrgencyLevel.MEDIUM, "For colder nights")
     )
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        MaterialTheme.colorScheme.background
+    Scaffold(
+        topBar = {
+            CustomAppBar(
+                title = "Orphanage Details",
+                onNavigationClick = onBackClick,
+                actions = listOf(
+                    AppBarAction(
+                        icon = Icons.Default.Share,
+                        contentDescription = "Share",
+                        onClick = { /* Share orphanage */ }
+                    ),
+                    AppBarAction(
+                        icon = Icons.Default.Favorite,
+                        contentDescription = "Favorite",
+                        onClick = { /* Add to favorites */ }
                     )
                 )
             )
-    ) {
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            MaterialTheme.colorScheme.background
+                        )
+                    )
+                )
+        ) {
         item {
             HeaderSection(orphanage = orphanage)
         }
 
         item {
             DescriptionSection(orphanage = orphanage)
-        }
-
-        item {
-            DonorsSection(donatedCount = orphanage.donatedCount)
         }
 
         item {
@@ -84,6 +106,7 @@ fun OrphanageDetailScreen(onDonateClick: () -> Unit = {}) {
             DonateButtonSection(onDonateClick = onDonateClick)
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
     }
 }
 
@@ -247,78 +270,6 @@ fun DescriptionSection(orphanage: OrphanageDetail) {
     }
 }
 
-@Composable
-fun DonorsSection(donatedCount: Int) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .shadow(8.dp, RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Text(
-                text = "Recent Donors",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Stacked donor avatars
-                Row(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    repeat(5) { index ->
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primary,
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                                        )
-                                    )
-                                )
-                                .then(
-                                    if (index > 0) Modifier.offset(x = (-8 * index).dp)
-                                    else Modifier
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "U${index + 1}",
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        }
-                    }
-                }
-
-                // Donor count
-                Text(
-                    text = "$donatedCount+ people donated",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun ItemsNeededSection(neededItems: List<NeededItem>) {

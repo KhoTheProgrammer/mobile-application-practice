@@ -23,6 +23,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.components.CustomAppBar
+import com.example.myapplication.ui.components.AppBarAction
 
 // Data classes for orphanage dashboard
 data class DashboardStat(
@@ -53,7 +55,9 @@ data class QuickAction(
 @Composable
 fun OrphanageHomeScreen(
     onViewAllDonations: () -> Unit = {},
-    onUpdateNeeds: () -> Unit = {}
+    onUpdateNeeds: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
 ) {
     val gradient = Brush.verticalGradient(
         colors = listOf(
@@ -63,17 +67,37 @@ fun OrphanageHomeScreen(
         )
     )
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(gradient)
-            .padding(horizontal = 24.dp)
-    ) {
-        item {
-            // Header with Orphanage Profile
-            OrphanageHeaderSection()
-            Spacer(modifier = Modifier.height(32.dp))
+    Scaffold(
+        topBar = {
+            CustomAppBar(
+                title = "Hope Children's Home",
+                subtitle = "Blantyre, Malawi",
+                onNavigationClick = null,
+                actions = listOf(
+                    AppBarAction(
+                        icon = Icons.Default.Notifications,
+                        contentDescription = "Notifications",
+                        onClick = onNotificationsClick
+                    ),
+                    AppBarAction(
+                        icon = Icons.Default.AccountCircle,
+                        contentDescription = "Profile",
+                        onClick = onProfileClick
+                    )
+                )
+            )
         }
+    ) { paddingValues ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gradient)
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp)
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
         item {
             // Welcome Message
@@ -134,38 +158,47 @@ fun OrphanageHomeScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+    }
 }
 
 @Composable
-fun OrphanageHeaderSection() {
+fun OrphanageHeaderSection(
+    onProfileClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Orphanage Avatar
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        // Orphanage Avatar - Clickable
+        IconButton(
+            onClick = onProfileClick,
+            modifier = Modifier.size(60.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            )
                         )
                     )
+                    .shadow(8.dp, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Home,
+                    contentDescription = "Orphanage",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp)
                 )
-                .shadow(8.dp, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Home,
-                contentDescription = "Orphanage",
-                tint = Color.White,
-                modifier = Modifier.size(28.dp)
-            )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -185,19 +218,33 @@ fun OrphanageHeaderSection() {
             )
         }
 
-        // Notification Icon
-        IconButton(
-            onClick = { /* Handle notifications */ }
-        ) {
-            Badge(
-                containerColor = MaterialTheme.colorScheme.error
+        // Notifications Icon
+        IconButton(onClick = onNotificationsClick) {
+            BadgedBox(
+                badge = {
+                    Badge(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ) {
+                        Text("3")
+                    }
+                }
             ) {
-                Text("3")
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Notifications",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
             }
+        }
+        
+        // Profile Icon
+        IconButton(onClick = onProfileClick) {
             Icon(
-                imageVector = Icons.Default.Notifications,
-                contentDescription = "Notifications",
-                tint = MaterialTheme.colorScheme.onBackground
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "Profile",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
             )
         }
     }
