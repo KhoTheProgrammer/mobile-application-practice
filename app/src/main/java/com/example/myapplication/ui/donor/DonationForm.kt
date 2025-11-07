@@ -25,10 +25,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.components.CustomAppBar
+import com.example.myapplication.ui.components.AppBarAction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DonationFormScreen(onSubmitSuccess: () -> Unit = {}) {
+fun DonationFormScreen(
+    onBackClick: () -> Unit = {},
+    onSubmitSuccess: () -> Unit = {}
+) {
 
     // State variables
     var selectedCategory by remember { mutableStateOf("") }
@@ -74,33 +79,27 @@ fun DonationFormScreen(onSubmitSuccess: () -> Unit = {}) {
         "Needs Repair"
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        // Header
-        Text(
-            text = "Donation Details",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Text(
-            text = "Please provide details about your donation",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        // Scrollable content
+    Scaffold(
+        topBar = {
+            CustomAppBar(
+                title = "Donation Form",
+                subtitle = "Fill in the details",
+                onNavigationClick = onBackClick
+            )
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp)
         ) {
+            // Scrollable content
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
             // Category Dropdown
             Card(
                 modifier = Modifier
@@ -430,13 +429,14 @@ fun DonationFormScreen(onSubmitSuccess: () -> Unit = {}) {
             }
         }
 
+        Spacer(modifier = Modifier.height(24.dp))
+
         // Submit Button
         Button(
             onClick = onSubmitSuccess,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .padding(top = 16.dp),
+                .height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary
@@ -448,6 +448,9 @@ fun DonationFormScreen(onSubmitSuccess: () -> Unit = {}) {
                 fontSize = 18.sp
             )
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+    }
     }
 }
 

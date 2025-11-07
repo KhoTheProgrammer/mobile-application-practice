@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -26,9 +28,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.components.CustomAppBar
+import com.example.myapplication.ui.components.AppBarAction
 
 @Composable
-fun DonorHomeScreen(onOrphanageClick: () -> Unit = {}) {
+fun DonorHomeScreen(
+    onOrphanageClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
+) {
     var searchQuery by remember { mutableStateOf("") }
 
     val gradient = Brush.verticalGradient(
@@ -39,98 +47,135 @@ fun DonorHomeScreen(onOrphanageClick: () -> Unit = {}) {
         )
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(gradient)
-            .padding(horizontal = 24.dp)
-    ) {
-        // Header with User Profile
-        HeaderSection()
+    Scaffold(
+        topBar = {
+            CustomAppBar(
+                title = "Kondwani Padyera",
+                subtitle = "Donor",
+                onNavigationClick = null,
+                actions = listOf(
+                    AppBarAction(
+                        icon = Icons.Outlined.Notifications,
+                        contentDescription = "Notifications",
+                        onClick = onNotificationsClick
+                    ),
+                    AppBarAction(
+                        icon = Icons.Outlined.AccountCircle,
+                        contentDescription = "Profile",
+                        onClick = onProfileClick
+                    )
+                )
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gradient)
+                .padding(paddingValues)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp)
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
+                // Welcome Message
+                Text(
+                    text = "What do you want to donate today?",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                )
 
-        // Welcome Message
-        Text(
-            text = "What do you want to donate today?",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp
-        )
+                Spacer(modifier = Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
+                // Search Bar
+                SearchBarSection(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it }
+                )
 
-        // Search Bar
-        SearchBarSection(
-            searchQuery = searchQuery,
-            onSearchQueryChange = { searchQuery = it }
-        )
+                Spacer(modifier = Modifier.height(32.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
+                // Categories Section
+                Text(
+                    text = "Categories",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
 
-        // Categories Section
-        Text(
-            text = "Categories",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+                CategoriesSection()
 
-        CategoriesSection()
+                Spacer(modifier = Modifier.height(32.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
+                // Featured Orphanages Section
+                Text(
+                    text = "Featured Orphanages",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
 
-        // Featured Orphanages Section
-        Text(
-            text = "Featured Orphanages",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+                FeaturedOrphanagesSection(onOrphanageClick = onOrphanageClick)
 
-        FeaturedOrphanagesSection(onOrphanageClick = onOrphanageClick)
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
     }
 }
 
+
 @Composable
-fun HeaderSection() {
+fun HeaderSection(
+    onProfileClick: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // User Avatar
-        Box(
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+        // User Avatar - Clickable to go to profile
+        IconButton(
+            onClick = onProfileClick,
+            modifier = Modifier.size(60.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            )
                         )
                     )
+                    .shadow(8.dp, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "KP",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
                 )
-                .shadow(8.dp, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "KP",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
+            }
         }
 
         Spacer(modifier = Modifier.width(16.dp))
 
         // Welcome Text
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "Hello,",
                 style = MaterialTheme.typography.bodyMedium,
@@ -141,6 +186,26 @@ fun HeaderSection() {
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
+            )
+        }
+
+        // Notifications Icon Button
+        IconButton(onClick = onNotificationsClick) {
+            Icon(
+                imageVector = Icons.Outlined.Notifications,
+                contentDescription = "Notifications",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        // Profile Icon Button
+        IconButton(onClick = onProfileClick) {
+            Icon(
+                imageVector = Icons.Outlined.AccountCircle,
+                contentDescription = "Profile",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
             )
         }
     }
