@@ -8,13 +8,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.data.model.donor.OrphanageNeed
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.components.CustomAppBar
+import com.example.myapplication.ui.components.AppBarAction
 
 // Data class for orphanage needs
 
@@ -131,49 +133,26 @@ fun UpdateNeedsScreen(onBackClick: () -> Unit = {}) {
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Top App Bar with back button
-        TopAppBar(
-            title = { 
-                Column {
-                    Text("Manage Needs")
-                    Text(
-                        text = "${filteredNeeds.size} active needs",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            actions = {
-                // Add Need Button
-                IconButton(
-                    onClick = { showAddNeedDialog = true }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
+    Scaffold(
+        topBar = {
+            CustomAppBar(
+                title = "Manage Needs",
+                subtitle = "${filteredNeeds.size} active needs",
+                onNavigationClick = onBackClick,
+                actions = listOf(
+                    AppBarAction(
+                        icon = Icons.Default.Add,
                         contentDescription = "Add Need",
-                        tint = MaterialTheme.colorScheme.primary
+                        onClick = { showAddNeedDialog = true }
                     )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                )
             )
-        )
-        
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .padding(24.dp)
         ) {
 
@@ -260,9 +239,8 @@ fun UpdateNeedsScreen(onBackClick: () -> Unit = {}) {
                 }
             }
         }
-    }
 
-    // Add/Edit Need Dialog
+        // Add/Edit Need Dialog
     if (showAddNeedDialog || editingNeed != null) {
         AddEditNeedDialog(
             need = editingNeed,
@@ -286,9 +264,9 @@ fun UpdateNeedsScreen(onBackClick: () -> Unit = {}) {
             }
         )
     }
+    }
 }
 }
-
 @Composable
 fun UrgencyFilterSection(
     selectedUrgencyFilter: String,
@@ -370,7 +348,7 @@ fun NeedCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        imageVector = _root_ide_package_.com.example.myapplication.ui.donor.getIconForCategory(
+                        imageVector = getIconForCategory(
                             need.category
                         ),
                         contentDescription = need.category,
@@ -544,7 +522,7 @@ fun AddEditNeedDialog(
                         onValueChange = { },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            .menuAnchor(),
                         readOnly = true,
                         label = { Text("Category") },
                         trailingIcon = {
@@ -606,7 +584,7 @@ fun AddEditNeedDialog(
                         onValueChange = { },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            .menuAnchor(),
                         readOnly = true,
                         label = { Text("Urgency Level") },
                         trailingIcon = {
@@ -661,6 +639,20 @@ fun AddEditNeedDialog(
             }
         }
     )
+}
+
+@Composable
+fun getIconForCategory(category: String): ImageVector {
+    return when (category) {
+        "Food" -> Icons.Default.Fastfood
+        "Clothes" -> Icons.Default.Checkroom
+        "Books" -> Icons.Default.MenuBook
+        "Medical" -> Icons.Default.MedicalServices
+        "Furniture" -> Icons.Default.Chair
+        "Toys" -> Icons.Default.Toys
+        "Electronics" -> Icons.Default.ElectricalServices
+        else -> Icons.Default.Category
+    }
 }
 
 @Preview(showBackground = true)
