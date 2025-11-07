@@ -19,6 +19,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.components.CustomAppBar
+import com.example.myapplication.ui.components.AppBarAction
 
 // Data class for donation items
 data class Donation(
@@ -55,7 +57,6 @@ class ViewMyDonationsActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ViewMyDonationsScreen(onBackClick: () -> Unit = {}) {
     var searchQuery by remember { mutableStateOf("") }
@@ -130,34 +131,29 @@ fun ViewMyDonationsScreen(onBackClick: () -> Unit = {}) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.History,
-                contentDescription = "Donations History",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "My Donations",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+    Scaffold(
+        topBar = {
+            CustomAppBar(
+                title = "My Donations",
+                subtitle = "${filteredDonations.size} donations",
+                onNavigationClick = onBackClick,
+                actions = listOf(
+                    AppBarAction(
+                        icon = Icons.Default.FilterList,
+                        contentDescription = "Filter",
+                        onClick = { /* Add filter functionality */ }
+                    )
+                )
             )
         }
-
-        // Search Bar
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp)
+        ) {
+            // Search Bar
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -226,6 +222,7 @@ fun ViewMyDonationsScreen(onBackClick: () -> Unit = {}) {
                 }
             }
         }
+    }
     }
 }
 

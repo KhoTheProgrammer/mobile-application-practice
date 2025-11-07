@@ -24,6 +24,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.components.CustomAppBar
+import com.example.myapplication.ui.components.AppBarAction
 
 // Data class for incoming donations to orphanage
 data class IncomingDonation(
@@ -120,7 +122,8 @@ fun FiltersSection(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            val categoryOptions = listOf("All", "Food", "Clothes", "Books", "Toys", "Electronics", "Others")
+            val categoryOptions =
+                listOf("All", "Food", "Clothes", "Books", "Toys", "Electronics", "Others")
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -402,67 +405,45 @@ fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
     }
 
     // Filter donations
-    val filteredDonations = remember(searchQuery, selectedStatusFilter, selectedCategoryFilter, sampleDonations) {
-        sampleDonations.filter { donation ->
-            val matchesSearch = if (searchQuery.isBlank()) true else {
-                donation.donorName.contains(searchQuery, ignoreCase = true) ||
-                donation.itemCategory.contains(searchQuery, ignoreCase = true) ||
-                donation.itemDescription.contains(searchQuery, ignoreCase = true)
+    val filteredDonations =
+        remember(searchQuery, selectedStatusFilter, selectedCategoryFilter, sampleDonations) {
+            sampleDonations.filter { donation ->
+                val matchesSearch = if (searchQuery.isBlank()) true else {
+                    donation.donorName.contains(searchQuery, ignoreCase = true) ||
+                            donation.itemCategory.contains(searchQuery, ignoreCase = true) ||
+                            donation.itemDescription.contains(searchQuery, ignoreCase = true)
+                }
+
+                val matchesStatus = selectedStatusFilter == "All" ||
+                        donation.status.displayName == selectedStatusFilter
+
+                val matchesCategory = selectedCategoryFilter == "All" ||
+                        donation.itemCategory == selectedCategoryFilter
+
+                matchesSearch && matchesStatus && matchesCategory
             }
-
-            val matchesStatus = selectedStatusFilter == "All" ||
-                donation.status.displayName == selectedStatusFilter
-
-            val matchesCategory = selectedCategoryFilter == "All" ||
-                donation.itemCategory == selectedCategoryFilter
-
-            matchesSearch && matchesStatus && matchesCategory
         }
-    }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Top App Bar with back button
-        TopAppBar(
-            title = {
-                Column {
-                    Text("All Donations")
-                    Text(
-                        text = "${filteredDonations.size} donations found",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
-            },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-            },
-            actions = {
-                // Filter Toggle Button
-                IconButton(
-                    onClick = { showFilters = !showFilters }
-                ) {
-                    Icon(
-                        imageVector = if (showFilters) Icons.Default.FilterListOff else Icons.Default.FilterList,
+    Scaffold(
+        topBar = {
+            CustomAppBar(
+                title = "All Donations",
+                subtitle = "${filteredDonations.size} donations found",
+                onNavigationClick = onBackClick,
+                actions = listOf(
+                    AppBarAction(
+                        icon = if (showFilters) Icons.Default.FilterListOff else Icons.Default.FilterList,
                         contentDescription = "Toggle Filters",
-                        tint = MaterialTheme.colorScheme.primary
+                        onClick = { showFilters = !showFilters }
                     )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface
+                )
             )
-        )
-
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .padding(24.dp)
         ) {
 
@@ -549,6 +530,7 @@ fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
         }
     }
 }
+
 
 @Preview(showBackground = true)
 @Composable
