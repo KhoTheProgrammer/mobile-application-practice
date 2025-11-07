@@ -17,16 +17,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.components.CenteredAppBar
 
 @Composable
 fun ThankYouScreen(
     onViewMyDonations: () -> Unit = {},
     onBackToHome: () -> Unit = {}
 ) {
-
-    Column(
+    Scaffold(
+        topBar = {
+            CenteredAppBar(
+                title = "Success",
+                onNavigationClick = null
+            )
+        }
+    ) { paddingValues ->
+        Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(paddingValues)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -140,6 +149,7 @@ fun ThankYouScreen(
                 )
             }
         }
+    }
     }
 }
 
