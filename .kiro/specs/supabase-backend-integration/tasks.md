@@ -203,7 +203,7 @@
   - Add loading indicators and error messages for all auth operations
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-- [ ] 22. Update donor UI screens
+- [x] 22. Update donor UI screens
   - Update `DonorsHome` screen to display orphanages from OrphanageBrowseViewModel
   - Update `OrphanageDetail` screen to display orphanage details and needs from OrphanageDetailViewModel
   - Update `DonationForm` screen to integrate with DonationFormViewModel and handle image uploads
@@ -213,7 +213,7 @@
   - Add donation status badges and timeline in ViewMyDonations
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.2, 7.3, 7.5_
 
-- [ ] 23. Update orphanage UI screens
+- [x] 23. Update orphanage UI screens
   - Update `OrphanageHome` screen to display dashboard with pending donations from OrphanageHomeViewModel
   - Update `UpdateNeeds` screen to integrate with NeedsManagementViewModel for CRUD operations
   - Update `ViewAllDonations` screen to display donations for orphanage from DonationReviewViewModel

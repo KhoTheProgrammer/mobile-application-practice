@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,11 +55,22 @@ data class QuickAction(
 
 @Composable
 fun OrphanageHomeScreen(
+    orphanageId: String,
+    viewModel: OrphanageHomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return OrphanageHomeViewModel(orphanageId) as T
+            }
+        }
+    ),
     onViewAllDonations: () -> Unit = {},
     onUpdateNeeds: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {}
 ) {
+    val uiState = viewModel.uiState
+
     val gradient = Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
@@ -117,6 +129,39 @@ fun OrphanageHomeScreen(
         }
 
         item {
+            // Error Message
+            uiState.error?.let { error ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = { viewModel.clearError() }) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Dismiss",
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        item {
             // Dashboard Stats - Only donation related
             Text(
                 text = "Donation Overview",
@@ -125,7 +170,22 @@ fun OrphanageHomeScreen(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            DashboardStatsSection()
+            
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                DashboardStatsSection(
+                    needsStatistics = uiState.needsStatistics,
+                    donationStatistics = uiState.donationStatistics
+                )
+            }
             Spacer(modifier = Modifier.height(32.dp))
         }
 
@@ -154,7 +214,38 @@ fun OrphanageHomeScreen(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            RecentDonationsSection(onViewAllDonations = onViewAllDonations)
+            
+            if (uiState.recentDonations.isEmpty() && !uiState.isLoading) {
+                // Empty State
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Inventory,
+                            contentDescription = "No donations",
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No recent donations",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            } else {
+                RecentDonationsSection(
+                    donations = uiState.recentDonations,
+                    onViewAllDonations = onViewAllDonations
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
@@ -251,31 +342,34 @@ fun OrphanageHeaderSection(
 }
 
 @Composable
-fun DashboardStatsSection() {
+fun DashboardStatsSection(
+    needsStatistics: com.example.myapplication.data.repository.NeedsStatistics?,
+    donationStatistics: com.example.myapplication.data.repository.DonationStatistics?
+) {
     val stats = listOf(
         DashboardStat(
             title = "Pending Donations",
-            value = "12",
+            value = donationStatistics?.pendingDonations?.toString() ?: "0",
             icon = Icons.Default.Pending,
             color = Color(0xFFFF9800),
-            trend = "+3 today"
+            trend = ""
         ),
         DashboardStat(
             title = "This Month",
-            value = "28",
+            value = donationStatistics?.totalDonations?.toString() ?: "0",
             icon = Icons.Default.TrendingUp,
             color = Color(0xFF4CAF50),
             trend = "donations"
         ),
         DashboardStat(
             title = "Urgent Needs",
-            value = "5",
+            value = needsStatistics?.urgentNeeds?.toString() ?: "0",
             icon = Icons.Default.PriorityHigh,
             color = Color(0xFFF44336)
         ),
         DashboardStat(
             title = "Total Received",
-            value = "156",
+            value = donationStatistics?.completedDonations?.toString() ?: "0",
             icon = Icons.Default.CheckCircle,
             color = MaterialTheme.colorScheme.primary,
             trend = "all time"
@@ -442,59 +536,37 @@ fun QuickActionCard(action: QuickAction) {
 }
 
 @Composable
-fun RecentDonationsSection(onViewAllDonations: () -> Unit = {}) {
-    val recentDonations = listOf(
-        RecentDonation(
-            donorName = "John Doe",
-            itemCategory = "Food",
-            itemDescription = "Rice and cooking oil",
-            timeAgo = "2 hours ago",
-            status = "Received",
-            statusColor = Color(0xFF4CAF50)
-        ),
-        RecentDonation(
-            donorName = "Sarah Wilson",
-            itemCategory = "Clothes",
-            itemDescription = "Children's winter clothes",
-            timeAgo = "5 hours ago",
-            status = "In Transit",
-            statusColor = Color(0xFF2196F3)
-        ),
-        RecentDonation(
-            donorName = "Mike Johnson",
-            itemCategory = "Books",
-            itemDescription = "Educational textbooks",
-            timeAgo = "1 day ago",
-            status = "Pending",
-            statusColor = Color(0xFFFF9800)
-        )
-    )
-
+fun RecentDonationsSection(
+    donations: List<com.example.myapplication.data.repository.Donation>,
+    onViewAllDonations: () -> Unit = {}
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        recentDonations.forEach { donation ->
-            RecentDonationCard(donation = donation)
+        donations.take(3).forEach { donation ->
+            RecentDonationCardFromModel(donation = donation)
         }
 
         // View All Button
-        OutlinedButton(
-            onClick = onViewAllDonations,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(
-                text = "View All Donations",
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Default.ArrowForward,
-                contentDescription = "View All",
-                modifier = Modifier.size(16.dp)
-            )
+        if (donations.isNotEmpty()) {
+            OutlinedButton(
+                onClick = onViewAllDonations,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "View All Donations",
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "View All",
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
@@ -572,10 +644,90 @@ fun RecentDonationCard(donation: RecentDonation) {
     }
 }
 
+@Composable
+fun RecentDonationCardFromModel(donation: com.example.myapplication.data.repository.Donation) {
+    val statusColor = when (donation.status) {
+        com.example.myapplication.data.repository.DonationStatus.COMPLETED -> Color(0xFF4CAF50)
+        com.example.myapplication.data.repository.DonationStatus.CONFIRMED -> Color(0xFF2196F3)
+        com.example.myapplication.data.repository.DonationStatus.PENDING -> Color(0xFFFF9800)
+        com.example.myapplication.data.repository.DonationStatus.CANCELLED -> Color(0xFFF44336)
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(2.dp, RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Donor Avatar
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Donor",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Donation Details
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Donor #${donation.donorId.take(8)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${donation.categoryId} - ${donation.amount}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    maxLines = 1
+                )
+                Text(
+                    text = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                        .format(java.util.Date(donation.createdAt)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+            }
+
+            // Status Badge
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = statusColor.copy(alpha = 0.1f)
+            ) {
+                Text(
+                    text = donation.status.name,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = statusColor,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun OrphanageHomeScreenPreview() {
     MyApplicationTheme {
-        OrphanageHomeScreen()
+        OrphanageHomeScreen(orphanageId = "preview-orphanage-id")
     }
 }

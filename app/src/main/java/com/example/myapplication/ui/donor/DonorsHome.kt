@@ -13,7 +13,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,11 +35,22 @@ import com.example.myapplication.ui.components.AppBarAction
 
 @Composable
 fun DonorHomeScreen(
-    onOrphanageClick: () -> Unit = {},
+    viewModel: DonorHomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onOrphanageClick: (String) -> Unit = {},
     onProfileClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {}
 ) {
+    val uiState = viewModel.uiState
     var searchQuery by remember { mutableStateOf("") }
+
+    // Update search query in ViewModel when it changes
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotEmpty()) {
+            viewModel.searchOrphanages(searchQuery)
+        } else {
+            viewModel.clearSearch()
+        }
+    }
 
     val gradient = Brush.verticalGradient(
         colors = listOf(
@@ -101,29 +114,120 @@ fun DonorHomeScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Categories Section
-                Text(
-                    text = "Categories",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                // Error Message
+                uiState.error?.let { error ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { viewModel.clearError() }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Dismiss",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
+                }
 
-                CategoriesSection()
+                // Loading Indicator
+                if (uiState.isLoading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    // Categories Section
+                    Text(
+                        text = "Categories",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                    CategoriesSection()
 
-                // Featured Orphanages Section
-                Text(
-                    text = "Featured Orphanages",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                    Spacer(modifier = Modifier.height(32.dp))
 
-                FeaturedOrphanagesSection(onOrphanageClick = onOrphanageClick)
+                    // Featured Orphanages Section
+                    if (uiState.featuredOrphanages.isNotEmpty()) {
+                        Text(
+                            text = "Featured Orphanages",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        FeaturedOrphanagesSection(
+                            orphanages = uiState.featuredOrphanages,
+                            onOrphanageClick = onOrphanageClick
+                        )
+
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+
+                    // All Orphanages Section
+                    Text(
+                        text = if (searchQuery.isNotEmpty()) "Search Results" else "All Orphanages",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    if (uiState.orphanages.isEmpty()) {
+                        // Empty State
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.SearchOff,
+                                    contentDescription = "No orphanages",
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "No orphanages found",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+                    } else {
+                        AllOrphanagesSection(
+                            orphanages = uiState.orphanages,
+                            onOrphanageClick = onOrphanageClick
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
             }
@@ -330,39 +434,29 @@ fun CategoryItem(category: Category) {
 }
 
 @Composable
-fun FeaturedOrphanagesSection(onOrphanageClick: () -> Unit = {}) {
-    val orphanages = listOf(
-        Orphanage(
-            "Hope Children's Home",
-            "2.5 km away",
-            "Needs: Food, Clothes",
-            4.8f
-        ),
-        Orphanage(
-            "Little Angels Shelter",
-            "5.1 km away",
-            "Needs: Books, Toys",
-            4.6f
-        ),
-        Orphanage(
-            "Bright Future Orphanage",
-            "3.2 km away",
-            "Needs: Furniture, Utensils",
-            4.9f
-        ),
-        Orphanage(
-            "Sunshine Kids Center",
-            "7.8 km away",
-            "Needs: Medical Supplies",
-            4.7f
-        )
-    )
-
+fun FeaturedOrphanagesSection(
+    orphanages: List<com.example.myapplication.data.model.orphanages.Orphanage>,
+    onOrphanageClick: (String) -> Unit = {}
+) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(orphanages) { orphanage ->
-            OrphanageItem(orphanage = orphanage, onClick = onOrphanageClick)
+            OrphanageItemFromModel(orphanage = orphanage, onClick = { onOrphanageClick(orphanage.id) })
+        }
+    }
+}
+
+@Composable
+fun AllOrphanagesSection(
+    orphanages: List<com.example.myapplication.data.model.orphanages.Orphanage>,
+    onOrphanageClick: (String) -> Unit = {}
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        orphanages.forEach { orphanage ->
+            OrphanageItemFromModel(orphanage = orphanage, onClick = { onOrphanageClick(orphanage.id) })
         }
     }
 }
@@ -437,6 +531,116 @@ fun OrphanageItem(orphanage: Orphanage, onClick: () -> Unit = {}) {
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 maxLines = 2
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Donate Button
+            Button(
+                onClick = onClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text(
+                    text = "View Orphanage",
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun OrphanageItemFromModel(
+    orphanage: com.example.myapplication.data.model.orphanages.Orphanage,
+    onClick: () -> Unit = {}
+) {
+    Card(
+        modifier = Modifier
+            .width(280.dp)
+            .shadow(8.dp, RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp)
+        ) {
+            // Orphanage Name and Rating
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = orphanage.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Rating
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Rating",
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = orphanage.rating.toString(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Distance
+            Text(
+                text = orphanage.distance,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Description
+            Text(
+                text = orphanage.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                maxLines = 2
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Needs summary
+            if (orphanage.currentNeeds.isNotEmpty()) {
+                Text(
+                    text = "Needs: ${orphanage.currentNeeds.take(3).joinToString(", ") { it.item }}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 1
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

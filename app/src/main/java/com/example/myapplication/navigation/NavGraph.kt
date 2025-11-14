@@ -71,7 +71,10 @@ fun NavGraph(
         }
 
         composable(Screen.OrphanageHome.route) {
+            // TODO: Get actual orphanage ID from auth/user session
+            // For now using a placeholder - replace with actual orphanage ID from logged-in user
             OrphanageHomeScreen(
+                orphanageId = "placeholder-orphanage-id",
                 onViewAllDonations = {
                     navController.navigate(Screen.ViewAllDonations.route)
                 },
