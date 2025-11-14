@@ -34,6 +34,25 @@ data class NeedCreateRequest(
 class NeedsRepository {
     private val client = SupabaseClient.client
 
+    private suspend fun getCategoryIdByName(categoryName: String): String? {
+        return try {
+            @kotlinx.serialization.Serializable
+            data class CategoryDto(val id: String, val name: String)
+            
+            val categories = client.from("categories")
+                .select {
+                    filter {
+                        eq("name", categoryName)
+                    }
+                }
+                .decodeList<CategoryDto>()
+            categories.firstOrNull()?.id
+        } catch (e: Exception) {
+            android.util.Log.e("NeedsRepository", "Failed to get category ID: ${e.message}")
+            null
+        }
+    }
+
     suspend fun getAllActiveNeeds(): NeedsResult<List<Need>> {
         return try {
             val needs = client.from("needs")
@@ -108,16 +127,24 @@ class NeedsRepository {
         description: String
     ): NeedsResult<Need> {
         return try {
-            val needData = mapOf(
-                "orphanage_id" to orphanageId,
-                "category_id" to categoryId,
-                "item_name" to itemName,
-                "quantity" to quantity,
-                "priority" to priority.name,
-                "description" to description,
-                "status" to "active"
+            // Get the category UUID from the category name
+            val categoryUuid = getCategoryIdByName(categoryId)
+            if (categoryUuid == null) {
+                return NeedsResult.Error("Invalid category: $categoryId")
+            }
+            
+            val needInsert = com.example.myapplication.data.dto.NeedInsertDto(
+                orphanageId = orphanageId,
+                categoryId = categoryUuid,
+                itemName = itemName,
+                quantity = quantity,
+                priority = priority.name,
+                description = description,
+                status = "active"
             )
-            client.from("needs").insert(needData)
+            
+            android.util.Log.d("NeedsRepository", "Creating need: $needInsert")
+            client.from("needs").insert(needInsert)
             val needs = client.from("needs")
                 .select {
                     filter {

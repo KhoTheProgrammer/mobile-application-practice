@@ -134,12 +134,15 @@ class UpdateNeedsViewModel(
     }
 
     fun createNeed() {
+        android.util.Log.d("UpdateNeedsViewModel", "createNeed called")
         if (!validateForm()) {
+            android.util.Log.d("UpdateNeedsViewModel", "Form validation failed")
             return
         }
 
         viewModelScope.launch {
             uiState = uiState.copy(isLoading = true, error = null)
+            android.util.Log.d("UpdateNeedsViewModel", "Creating need with orphanageId: $orphanageId")
 
             val quantity = formState.quantity.toIntOrNull() ?: 0
 
@@ -152,6 +155,7 @@ class UpdateNeedsViewModel(
                 description = formState.description
             )) {
                 is NeedsResult.Success -> {
+                    android.util.Log.d("UpdateNeedsViewModel", "Need created successfully")
                     uiState = uiState.copy(
                         isLoading = false,
                         isAddingNeed = false,
@@ -162,6 +166,7 @@ class UpdateNeedsViewModel(
                     loadNeeds()
                 }
                 is NeedsResult.Error -> {
+                    android.util.Log.e("UpdateNeedsViewModel", "Failed to create need: ${result.message}")
                     uiState = uiState.copy(
                         isLoading = false,
                         error = result.message

@@ -67,7 +67,8 @@ fun OrphanageHomeScreen(
     onViewAllDonations: () -> Unit = {},
     onUpdateNeeds: () -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onNotificationsClick: () -> Unit = {}
+    onNotificationsClick: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val uiState = viewModel.uiState
 
@@ -96,7 +97,9 @@ fun OrphanageHomeScreen(
                         contentDescription = "Profile",
                         onClick = onProfileClick
                     )
-                )
+                ),
+                showLogout = true,
+                onLogoutClick = onLogout
             )
         }
     ) { paddingValues ->

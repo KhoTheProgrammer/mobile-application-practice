@@ -51,8 +51,17 @@ class AuthRepository {
                     )
                 }
                 UserType.ORPHANAGE -> {
-                    // Orphanage profile will be completed later with more details
-                    // For now, just create a placeholder
+                    // Create orphanage profile with minimal required fields
+                    client.from("orphanage_profiles").insert(
+                        mapOf(
+                            "id" to userId,
+                            "orphanage_name" to fullName,
+                            "address" to "To be updated",
+                            "city" to "To be updated",
+                            "state" to "To be updated",
+                            "country" to "Malawi"
+                        )
+                    )
                 }
             }
 

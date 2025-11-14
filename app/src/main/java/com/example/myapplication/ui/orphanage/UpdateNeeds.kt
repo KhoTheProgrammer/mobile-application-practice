@@ -8,32 +8,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.data.model.donor.OrphanageNeed
+import com.example.myapplication.data.model.orphanages.Need
+import com.example.myapplication.data.model.orphanages.Priority
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.ui.components.CustomAppBar
 import com.example.myapplication.ui.components.AppBarAction
-
-// Data class for orphanage needs
-
-
-enum class Urgency(val displayName: String, val color: Color) {
-    LOW("Low Priority", Color(0xFF4CAF50)),
-    MEDIUM("Medium Priority", Color(0xFFFF9800)),
-    HIGH("High Priority", Color(0xFFF44336)),
-    CRITICAL("Critical", Color(0xFF9C27B0))
-}
 
 class UpdateNeedsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +35,7 @@ class UpdateNeedsActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    UpdateNeedsScreen()
+                    UpdateNeedsScreen(orphanageId = "dummy_id")
                 }
             }
         }
@@ -53,83 +44,48 @@ class UpdateNeedsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UpdateNeedsScreen(onBackClick: () -> Unit = {}) {
-    var showAddNeedDialog by remember { mutableStateOf(false) }
-    var editingNeed by remember { mutableStateOf<OrphanageNeed?>(null) }
+fun UpdateNeedsScreen(
+    orphanageId: String,
+    onBackClick: () -> Unit = {}
+) {
+    val viewModel: UpdateNeedsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return UpdateNeedsViewModel(orphanageId) as T
+            }
+        }
+    )
+
+    val uiState = viewModel.uiState
+    val formState = viewModel.formState
+
     var searchQuery by remember { mutableStateOf("") }
     var selectedUrgencyFilter by remember { mutableStateOf("All") }
+    var needToDelete by remember { mutableStateOf<Need?>(null) }
 
-    // Sample needs data - replace with actual data from your backend/database
-    var needs by remember {
-        mutableStateOf(
-            listOf(
-                OrphanageNeed(
-                    id = "1",
-                    category = "Food",
-                    subcategory = "Grains",
-                    description = "Rice and maize flour for daily meals",
-                    quantity = "100kg monthly",
-                    urgency = Urgency.HIGH,
-                    dateAdded = "2024-01-10",
-                    isActive = true
-                ),
-                OrphanageNeed(
-                    id = "2",
-                    category = "Clothes",
-                    subcategory = "Children's Clothing",
-                    description = "Winter clothes for children aged 5-12",
-                    quantity = "50 pieces",
-                    urgency = Urgency.CRITICAL,
-                    dateAdded = "2024-01-08",
-                    isActive = true
-                ),
-                OrphanageNeed(
-                    id = "3",
-                    category = "Books",
-                    subcategory = "Educational",
-                    description = "Primary school textbooks and stationery",
-                    quantity = "200 books",
-                    urgency = Urgency.MEDIUM,
-                    dateAdded = "2024-01-05",
-                    isActive = true
-                ),
-                OrphanageNeed(
-                    id = "4",
-                    category = "Medical",
-                    subcategory = "First Aid",
-                    description = "Basic medical supplies and vitamins",
-                    quantity = "Monthly supply",
-                    urgency = Urgency.HIGH,
-                    dateAdded = "2024-01-12",
-                    isActive = true
-                ),
-                OrphanageNeed(
-                    id = "5",
-                    category = "Furniture",
-                    subcategory = "Beds",
-                    description = "Bunk beds for dormitory",
-                    quantity = "10 beds",
-                    urgency = Urgency.LOW,
-                    dateAdded = "2024-01-01",
-                    isActive = false
-                )
-            )
-        )
+    // Show success message
+    uiState.successMessage?.let {
+        val snackbarHostState = remember { SnackbarHostState() }
+        LaunchedEffect(uiState.successMessage) {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSuccessMessage()
+        }
     }
 
     // Filter needs
-    val filteredNeeds = remember(searchQuery, selectedUrgencyFilter, needs) {
-        needs.filter { need ->
+    val filteredNeeds = remember(searchQuery, selectedUrgencyFilter, uiState.needs) {
+        uiState.needs.filter { need ->
             val matchesSearch = if (searchQuery.isBlank()) true else {
-                need.category.contains(searchQuery, ignoreCase = true) ||
-                need.subcategory.contains(searchQuery, ignoreCase = true) ||
-                need.description.contains(searchQuery, ignoreCase = true)
+                need.item.contains(searchQuery, ignoreCase = true) ||
+                        need.category.contains(searchQuery, ignoreCase = true) ||
+                        need.description.contains(searchQuery, ignoreCase = true)
             }
-            
-            val matchesUrgency = selectedUrgencyFilter == "All" || 
-                need.urgency.displayName == selectedUrgencyFilter
-            
-            matchesSearch && matchesUrgency && need.isActive
+
+            val matchesUrgency = selectedUrgencyFilter == "All" ||
+                    need.priority.name == selectedUrgencyFilter.uppercase().replace(" PRIORITY", "")
+
+            matchesSearch && matchesUrgency
         }
     }
 
@@ -143,7 +99,7 @@ fun UpdateNeedsScreen(onBackClick: () -> Unit = {}) {
                     AppBarAction(
                         icon = Icons.Default.Add,
                         contentDescription = "Add Need",
-                        onClick = { showAddNeedDialog = true }
+                        onClick = { viewModel.showAddNeedDialog() }
                     )
                 )
             )
@@ -156,176 +112,165 @@ fun UpdateNeedsScreen(onBackClick: () -> Unit = {}) {
                 .padding(24.dp)
         ) {
 
-        // Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            placeholder = { Text("Search needs...") },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "Clear search",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            },
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-            )
-        )
-
-        // Urgency Filter
-        UrgencyFilterSection(
-            selectedUrgencyFilter = selectedUrgencyFilter,
-            onUrgencyFilterChange = { selectedUrgencyFilter = it }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Needs List
-        if (filteredNeeds.isEmpty()) {
-            // Empty state
-            Column(
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SearchOff,
-                    contentDescription = "No needs found",
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "No needs found",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Try adjusting your search or add a new need",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredNeeds) { need ->
-                    NeedCard(
-                        need = need,
-                        onEdit = { editingNeed = it },
-                        onDelete = { needToDelete: OrphanageNeed ->
-                            needs = needs.filter { it.id != needToDelete.id }
-                        }
+                    .padding(bottom = 16.dp),
+                placeholder = { Text("Search needs...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Clear search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+
+            // Urgency Filter
+            UrgencyFilterSection(
+                selectedUrgencyFilter = selectedUrgencyFilter,
+                onUrgencyFilterChange = { selectedUrgencyFilter = it }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Needs List
+            if (uiState.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            } else if (filteredNeeds.isEmpty()) {
+                // Empty state
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 48.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.SearchOff,
+                        contentDescription = "No needs found",
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No needs found",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Try adjusting your search or add a new need",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(filteredNeeds) { need ->
+                        NeedCard(
+                            need = need,
+                            onEdit = { viewModel.showEditNeedDialog(need) },
+                            onDelete = { needToDelete = need }
+                        )
+                    }
                 }
             }
         }
 
         // Add/Edit Need Dialog
-    if (showAddNeedDialog || editingNeed != null) {
-        AddEditNeedDialog(
-            need = editingNeed,
-            onDismiss = { 
-                showAddNeedDialog = false
-                editingNeed = null
-            },
-            onSave = { newNeed: OrphanageNeed ->
-                if (editingNeed != null) {
-                    // Edit existing need
-                    needs = needs.map { 
-                        if (it.id == editingNeed!!.id) newNeed 
-                        else it 
+        if (uiState.isAddingNeed || uiState.isEditingNeed) {
+            AddEditNeedDialog(
+                formState = formState,
+                isEditing = uiState.isEditingNeed,
+                isLoading = uiState.isLoading,
+                error = uiState.error,
+                onDismiss = {
+                    if (uiState.isAddingNeed) viewModel.hideAddNeedDialog() else viewModel.hideEditNeedDialog()
+                },
+                onSave = {
+                    if (uiState.isAddingNeed) viewModel.createNeed() else viewModel.updateNeed()
+                },
+                onEvent = {
+                    when (it) {
+                        is NeedFormEvent.OnCategoryChange -> viewModel.onCategoryChange(it.category)
+                        is NeedFormEvent.OnItemNameChange -> viewModel.onItemNameChange(it.name)
+                        is NeedFormEvent.OnQuantityChange -> viewModel.onQuantityChange(it.quantity)
+                        is NeedFormEvent.OnPriorityChange -> viewModel.onPriorityChange(it.priority)
+                        is NeedFormEvent.OnDescriptionChange -> viewModel.onDescriptionChange(it.description)
                     }
-                } else {
-                    // Add new need
-                    needs = needs + newNeed.copy(id = (needs.size + 1).toString())
                 }
-                showAddNeedDialog = false
-                editingNeed = null
-            }
-        )
-    }
+            )
+        }
+
+        needToDelete?.let { need ->
+            AlertDialog(
+                onDismissRequest = { needToDelete = null },
+                title = { Text("Delete Need") },
+                text = { Text("Are you sure you want to delete this need? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.deleteNeed(need.id)
+                            needToDelete = null
+                        }
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { needToDelete = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 }
-}
+
 @Composable
 fun UrgencyFilterSection(
     selectedUrgencyFilter: String,
     onUrgencyFilterChange: (String) -> Unit
 ) {
     val urgencyOptions = listOf("All", "Low Priority", "Medium Priority", "High Priority", "Critical")
-    
-    LazyColumn {
-        item {
-            Text(
-                text = "Filter by Urgency",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(bottom = 8.dp)
+
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        urgencyOptions.forEach { urgency ->
+            FilterChip(
+                onClick = { onUrgencyFilterChange(urgency) },
+                label = { Text(urgency, fontSize = 12.sp) },
+                selected = selectedUrgencyFilter == urgency
             )
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                urgencyOptions.take(3).forEach { urgency ->
-                    FilterChip(
-                        onClick = { onUrgencyFilterChange(urgency) },
-                        label = { Text(urgency, fontSize = 12.sp) },
-                        selected = selectedUrgencyFilter == urgency,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                urgencyOptions.drop(3).forEach { urgency ->
-                    FilterChip(
-                        onClick = { onUrgencyFilterChange(urgency) },
-                        label = { Text(urgency, fontSize = 12.sp) },
-                        selected = selectedUrgencyFilter == urgency,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                // Add empty space to balance the row
-                Spacer(modifier = Modifier.weight(1f))
-            }
         }
     }
 }
 
 @Composable
 fun NeedCard(
-    need: OrphanageNeed,
-    onEdit: (OrphanageNeed) -> Unit,
-    onDelete: (OrphanageNeed) -> Unit
+    need: Need,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -348,9 +293,7 @@ fun NeedCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        imageVector = getIconForCategory(
-                            need.category
-                        ),
+                        imageVector = getIconForCategory(need.category),
                         contentDescription = need.category,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
@@ -358,13 +301,13 @@ fun NeedCard(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "${need.category} - ${need.subcategory}",
+                            text = need.item,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Added ${need.dateAdded}",
+                            text = "Added on ${need.createdAt}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -374,13 +317,13 @@ fun NeedCard(
                 // Urgency Badge
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = need.urgency.color.copy(alpha = 0.1f)
+                    color = need.priority.color.copy(alpha = 0.1f)
                 ) {
                     Text(
-                        text = need.urgency.displayName,
+                        text = need.priority.name.lowercase().replaceFirstChar { it.uppercase() },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
-                        color = need.urgency.color,
+                        color = need.priority.color,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -427,7 +370,7 @@ fun NeedCard(
             ) {
                 // Edit Button
                 OutlinedButton(
-                    onClick = { onEdit(need) },
+                    onClick = onEdit,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
@@ -441,7 +384,7 @@ fun NeedCard(
 
                 // Delete Button
                 OutlinedButton(
-                    onClick = { showDeleteDialog = true },
+                    onClick = onDelete,
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
@@ -458,56 +401,36 @@ fun NeedCard(
             }
         }
     }
+}
 
-    // Delete Confirmation Dialog
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Need") },
-            text = { Text("Are you sure you want to delete this need? This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete(need)
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
+sealed class NeedFormEvent {
+    data class OnCategoryChange(val category: String) : NeedFormEvent()
+    data class OnItemNameChange(val name: String) : NeedFormEvent()
+    data class OnQuantityChange(val quantity: String) : NeedFormEvent()
+    data class OnPriorityChange(val priority: Priority) : NeedFormEvent()
+    data class OnDescriptionChange(val description: String) : NeedFormEvent()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditNeedDialog(
-    need: OrphanageNeed?,
+    formState: NeedFormState,
+    isEditing: Boolean,
+    isLoading: Boolean = false,
+    error: String? = null,
     onDismiss: () -> Unit,
-    onSave: (OrphanageNeed) -> Unit
+    onSave: () -> Unit,
+    onEvent: (NeedFormEvent) -> Unit
 ) {
-    var category by remember { mutableStateOf(need?.category ?: "") }
-    var subcategory by remember { mutableStateOf(need?.subcategory ?: "") }
-    var description by remember { mutableStateOf(need?.description ?: "") }
-    var quantity by remember { mutableStateOf(need?.quantity ?: "") }
-    var urgency by remember { mutableStateOf(need?.urgency ?: Urgency.MEDIUM) }
-
     var categoryExpanded by remember { mutableStateOf(false) }
     var urgencyExpanded by remember { mutableStateOf(false) }
 
     val categories = listOf("Food", "Clothes", "Books", "Medical", "Furniture", "Toys", "Electronics", "Others")
-    val urgencyLevels = Urgency.entries.toList()
+    val urgencyLevels = Priority.entries
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { 
-            Text(if (need == null) "Add New Need" else "Edit Need") 
-        },
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = if (isLoading) { {} } else onDismiss,
+        title = { Text(if (isEditing) "Edit Need" else "Add New Need") },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -518,11 +441,11 @@ fun AddEditNeedDialog(
                     onExpandedChange = { categoryExpanded = !categoryExpanded }
                 ) {
                     OutlinedTextField(
-                        value = category,
+                        value = formState.categoryId,
                         onValueChange = { },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor(MenuAnchorType.PrimaryEditable, true),
                         readOnly = true,
                         label = { Text("Category") },
                         trailingIcon = {
@@ -538,7 +461,7 @@ fun AddEditNeedDialog(
                             DropdownMenuItem(
                                 text = { Text(cat) },
                                 onClick = {
-                                    category = cat
+                                    onEvent(NeedFormEvent.OnCategoryChange(cat))
                                     categoryExpanded = false
                                 }
                             )
@@ -548,17 +471,19 @@ fun AddEditNeedDialog(
 
                 // Subcategory
                 OutlinedTextField(
-                    value = subcategory,
-                    onValueChange = { subcategory = it },
+                    value = formState.itemName,
+                    onValueChange = { onEvent(NeedFormEvent.OnItemNameChange(it)) },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Subcategory") },
-                    placeholder = { Text("e.g., Grains, Winter Clothes") }
+                    label = { Text("Item Name") },
+                    placeholder = { Text("e.g., Grains, Winter Clothes") },
+                    isError = formState.itemNameError != null,
+                    supportingText = { formState.itemNameError?.let { Text(it) } }
                 )
 
                 // Description
                 OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
+                    value = formState.description,
+                    onValueChange = { onEvent(NeedFormEvent.OnDescriptionChange(it)) },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Description") },
                     placeholder = { Text("Detailed description of the need") },
@@ -567,11 +492,13 @@ fun AddEditNeedDialog(
 
                 // Quantity
                 OutlinedTextField(
-                    value = quantity,
-                    onValueChange = { quantity = it },
+                    value = formState.quantity,
+                    onValueChange = { onEvent(NeedFormEvent.OnQuantityChange(it)) },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Quantity Needed") },
-                    placeholder = { Text("e.g., 50kg, 20 pieces, Monthly supply") }
+                    placeholder = { Text("e.g., 50kg, 20 pieces") },
+                    isError = formState.quantityError != null,
+                    supportingText = { formState.quantityError?.let { Text(it) } }
                 )
 
                 // Urgency Dropdown
@@ -580,11 +507,11 @@ fun AddEditNeedDialog(
                     onExpandedChange = { urgencyExpanded = !urgencyExpanded }
                 ) {
                     OutlinedTextField(
-                        value = urgency.displayName,
+                        value = formState.priority.name.lowercase().replaceFirstChar { it.uppercase() },
                         onValueChange = { },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor(MenuAnchorType.PrimaryEditable, true),
                         readOnly = true,
                         label = { Text("Urgency Level") },
                         trailingIcon = {
@@ -598,43 +525,47 @@ fun AddEditNeedDialog(
                     ) {
                         urgencyLevels.forEach { level ->
                             DropdownMenuItem(
-                                text = { Text(level.displayName) },
+                                text = { Text(level.name.lowercase().replaceFirstChar { it.uppercase() }) },
                                 onClick = {
-                                    urgency = level
+                                    onEvent(NeedFormEvent.OnPriorityChange(level))
                                     urgencyExpanded = false
                                 }
                             )
                         }
                     }
                 }
+                
+                // Error Message
+                error?.let {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = {
-                    if (category.isNotBlank() && subcategory.isNotBlank() && 
-                        description.isNotBlank() && quantity.isNotBlank()) {
-                        val newNeed = OrphanageNeed(
-                            id = need?.id ?: "",
-                            category = category,
-                            subcategory = subcategory,
-                            description = description,
-                            quantity = quantity,
-                            urgency = urgency,
-                            dateAdded = need?.dateAdded ?: "2024-01-16",
-                            isActive = need?.isActive ?: true
-                        )
-                        onSave(newNeed)
-                    }
-                },
-                enabled = category.isNotBlank() && subcategory.isNotBlank() && 
-                         description.isNotBlank() && quantity.isNotBlank()
+                onClick = onSave,
+                enabled = !isLoading && formState.itemName.isNotBlank() && formState.quantity.isNotBlank() && formState.categoryId.isNotBlank()
             ) {
-                Text(if (need == null) "Add Need" else "Save Changes")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(if (isEditing) "Save Changes" else "Add Need")
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isLoading
+            ) {
                 Text("Cancel")
             }
         }
@@ -646,7 +577,7 @@ fun getIconForCategory(category: String): ImageVector {
     return when (category) {
         "Food" -> Icons.Default.Fastfood
         "Clothes" -> Icons.Default.Checkroom
-        "Books" -> Icons.Default.MenuBook
+        "Books" -> Icons.AutoMirrored.Filled.MenuBook
         "Medical" -> Icons.Default.MedicalServices
         "Furniture" -> Icons.Default.Chair
         "Toys" -> Icons.Default.Toys
@@ -659,6 +590,6 @@ fun getIconForCategory(category: String): ImageVector {
 @Composable
 fun UpdateNeedsScreenPreview() {
     MyApplicationTheme {
-        UpdateNeedsScreen()
+        UpdateNeedsScreen(orphanageId = "dummy_id")
     }
 }

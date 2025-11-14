@@ -36,8 +36,12 @@ fun CustomAppBar(
     subtitle: String? = null,
     showElevation: Boolean = true,
     backgroundColor: Color? = null,
-    contentColor: Color? = null
+    contentColor: Color? = null,
+    showLogout: Boolean = false,
+    onLogoutClick: (() -> Unit)? = null
 ) {
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     TopAppBar(
         title = {
             Column(
@@ -89,6 +93,15 @@ fun CustomAppBar(
                     )
                 }
             }
+            if (showLogout && onLogoutClick != null) {
+                IconButton(onClick = { showLogoutDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Logout,
+                        contentDescription = "Logout",
+                        tint = contentColor ?: MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = backgroundColor ?: MaterialTheme.colorScheme.primary,
@@ -104,6 +117,36 @@ fun CustomAppBar(
             }
         )
     )
+
+    // Logout Confirmation Dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = {
+                Text(text = "Logout")
+            },
+            text = {
+                Text(text = "Are you sure you want to logout?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogoutClick?.invoke()
+                    }
+                ) {
+                    Text("Logout", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutDialog = false }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 /**

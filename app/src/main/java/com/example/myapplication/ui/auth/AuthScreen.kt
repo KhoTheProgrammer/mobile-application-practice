@@ -213,13 +213,23 @@ fun AuthScreen(
                     // Error Message
                     if (uiState.error != null) {
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = uiState.error,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
+                        Card(
                             modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Text(
+                                text = uiState.error,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                textAlign = TextAlign.Center,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -227,7 +237,21 @@ fun AuthScreen(
                     // Submit Button
                     Button(
                         onClick = {
+                            // Validate inputs
+                            if (email.isBlank()) {
+                                viewModel.setError("Please enter your email")
+                                return@Button
+                            }
+                            if (password.isBlank()) {
+                                viewModel.setError("Please enter your password")
+                                return@Button
+                            }
+                            
                             if (uiState.isSignUpMode) {
+                                if (fullName.isBlank()) {
+                                    viewModel.setError("Please enter your full name")
+                                    return@Button
+                                }
                                 selectedUserType?.let { userType ->
                                     viewModel.signUp(
                                         email = email,
@@ -249,9 +273,16 @@ fun AuthScreen(
                                     email = email,
                                     password = password,
                                     onSuccess = { type ->
+                                        android.util.Log.d("AuthScreen", "Sign in success callback triggered, type: $type")
                                         when (type) {
-                                            UserType.DONOR -> onNavigateToDonor()
-                                            UserType.ORPHANAGE -> onNavigateToOrphanage()
+                                            UserType.DONOR -> {
+                                                android.util.Log.d("AuthScreen", "Navigating to Donor")
+                                                onNavigateToDonor()
+                                            }
+                                            UserType.ORPHANAGE -> {
+                                                android.util.Log.d("AuthScreen", "Navigating to Orphanage")
+                                                onNavigateToOrphanage()
+                                            }
                                         }
                                     }
                                 )

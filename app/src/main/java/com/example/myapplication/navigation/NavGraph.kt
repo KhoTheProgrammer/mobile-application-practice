@@ -1,10 +1,18 @@
 package com.example.myapplication.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.myapplication.*
+import com.example.myapplication.ui.auth.AuthViewModel
 import com.example.myapplication.ui.auth.LoginScreen
 import com.example.myapplication.ui.donor.DonationFormScreen
 import com.example.myapplication.ui.donor.DonorHomeScreen
@@ -35,6 +43,8 @@ fun NavGraph(
     navController: NavHostController,
     startDestination: String = Screen.Landing.route
 ) {
+    val authViewModel: AuthViewModel = viewModel()
+
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -49,15 +59,20 @@ fun NavGraph(
 
         composable(Screen.Login.route) {
             com.example.myapplication.ui.auth.AuthScreen(
+                viewModel = authViewModel,
                 onNavigateToDonor = {
+                    android.util.Log.d("NavGraph", "onNavigateToDonor called")
                     navController.navigate(Screen.DonorHome.route) {
                         popUpTo(Screen.Landing.route) { inclusive = true }
                     }
+                    android.util.Log.d("NavGraph", "Navigation to DonorHome completed")
                 },
                 onNavigateToOrphanage = {
+                    android.util.Log.d("NavGraph", "onNavigateToOrphanage called")
                     navController.navigate(Screen.OrphanageHome.route) {
                         popUpTo(Screen.Landing.route) { inclusive = true }
                     }
+                    android.util.Log.d("NavGraph", "Navigation to OrphanageHome completed")
                 }
             )
         }
@@ -66,22 +81,73 @@ fun NavGraph(
             DonorHomeScreen(
                 onOrphanageClick = {
                     navController.navigate(Screen.OrphanageDetail.route)
+                },
+                onLogout = {
+                    authViewModel.logout(
+                        onSuccess = {
+                            // Navigate back to login and clear the back stack
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        onError = { error ->
+                            // Even if logout fails, navigate to login
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    )
                 }
             )
         }
 
         composable(Screen.OrphanageHome.route) {
-            // TODO: Get actual orphanage ID from auth/user session
-            // For now using a placeholder - replace with actual orphanage ID from logged-in user
-            OrphanageHomeScreen(
-                orphanageId = "placeholder-orphanage-id",
-                onViewAllDonations = {
-                    navController.navigate(Screen.ViewAllDonations.route)
-                },
-                onUpdateNeeds = {
-                    navController.navigate(Screen.UpdateNeeds.route)
+            // Observe the auth state to get the current user ID
+            val currentUserId = authViewModel.uiState.currentUserId
+            android.util.Log.d("NavGraph", "OrphanageHome composable - currentUserId: $currentUserId")
+            
+            // If no user ID, redirect to login
+            if (currentUserId == null || currentUserId.isEmpty()) {
+                android.util.Log.d("NavGraph", "No user ID found, redirecting to login")
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
-            )
+                // Show loading while redirecting
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                OrphanageHomeScreen(
+                    orphanageId = currentUserId,
+                    onViewAllDonations = {
+                        navController.navigate(Screen.ViewAllDonations.route)
+                    },
+                    onUpdateNeeds = {
+                        navController.navigate(Screen.UpdateNeeds.route)
+                    },
+                    onLogout = {
+                        authViewModel.logout(
+                            onSuccess = {
+                                // Navigate back to login and clear the back stack
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            },
+                            onError = { _ ->
+                                // Even if logout fails, navigate to login
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+                )
+            }
         }
 
         composable(Screen.OrphanageDetail.route) {
@@ -132,11 +198,15 @@ fun NavGraph(
         }
 
         composable(Screen.UpdateNeeds.route) {
-            UpdateNeedsScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
+            val currentUserId = authViewModel.uiState.currentUserId
+            if (currentUserId != null) {
+                UpdateNeedsScreen(
+                    orphanageId = currentUserId,
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
         }
 
         composable(Screen.SupabaseTest.route) {

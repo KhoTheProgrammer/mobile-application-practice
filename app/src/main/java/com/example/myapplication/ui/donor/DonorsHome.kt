@@ -38,7 +38,8 @@ fun DonorHomeScreen(
     viewModel: DonorHomeViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
     onOrphanageClick: (String) -> Unit = {},
     onProfileClick: () -> Unit = {},
-    onNotificationsClick: () -> Unit = {}
+    onNotificationsClick: () -> Unit = {},
+    onLogout: () -> Unit = {}
 ) {
     val uiState = viewModel.uiState
     var searchQuery by remember { mutableStateOf("") }
@@ -77,7 +78,9 @@ fun DonorHomeScreen(
                         contentDescription = "Profile",
                         onClick = onProfileClick
                     )
-                )
+                ),
+                showLogout = true,
+                onLogoutClick = onLogout
             )
         }
     ) { paddingValues ->

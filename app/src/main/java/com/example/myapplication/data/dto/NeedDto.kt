@@ -22,6 +22,20 @@ data class NeedDto(
     val status: String = "active"
 )
 
+@Serializable
+data class NeedInsertDto(
+    @SerialName("orphanage_id")
+    val orphanageId: String,
+    @SerialName("category_id")
+    val categoryId: String,  // This should be a UUID from categories table
+    @SerialName("item_name")
+    val itemName: String,
+    val quantity: Int,
+    val priority: String,
+    val description: String,
+    val status: String = "active"
+)
+
 fun NeedDto.toNeed(): Need {
     return Need(
         id = id,

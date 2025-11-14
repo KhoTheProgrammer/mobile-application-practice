@@ -1,6 +1,6 @@
 package com.example.myapplication.data.model.donor
 
-import com.example.myapplication.ui.orphanage.Urgency
+import com.example.myapplication.data.model.orphanages.Priority
 
 data class OrphanageNeed(
     val id: String,
@@ -8,7 +8,7 @@ data class OrphanageNeed(
     val subcategory: String,
     val description: String,
     val quantity: String,
-    val urgency: Urgency,
+    val priority: Priority,
     val dateAdded: String,
     val isActive: Boolean = true
 )
