@@ -48,15 +48,15 @@ fun NavGraph(
         }
 
         composable(Screen.Login.route) {
-            LoginScreen(
+            com.example.myapplication.ui.auth.AuthScreen(
                 onNavigateToDonor = {
                     navController.navigate(Screen.DonorHome.route) {
-                        popUpTo(Screen.Landing.route) { inclusive = false }
+                        popUpTo(Screen.Landing.route) { inclusive = true }
                     }
                 },
                 onNavigateToOrphanage = {
                     navController.navigate(Screen.OrphanageHome.route) {
-                        popUpTo(Screen.Landing.route) { inclusive = false }
+                        popUpTo(Screen.Landing.route) { inclusive = true }
                     }
                 }
             )

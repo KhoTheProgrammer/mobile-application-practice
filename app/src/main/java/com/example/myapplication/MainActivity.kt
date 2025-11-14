@@ -59,11 +59,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    // Start with test screen to verify Supabase connection
-                    NavGraph(
-                        navController = navController,
-                        startDestination = "supabase_test"
-                    )
+                    NavGraph(navController = navController)
                 }
             }
         }
