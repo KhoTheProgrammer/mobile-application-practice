@@ -27,30 +27,11 @@ import com.example.myapplication.ui.components.AppBarAction
 
 @Composable
 fun OrphanageDetailScreen(
+    viewModel: OrphanageDetailViewModel,
     onBackClick: () -> Unit = {},
     onDonateClick: () -> Unit = {}
 ) {
-    val orphanage = OrphanageDetail(
-        name = "Hope Children's Home",
-        description = "Hope Children's Home has been providing shelter, education, and care to orphaned and vulnerable children since 2010. We believe every child deserves a loving home and quality education to build a better future.",
-        distance = "2.5 km away",
-        rating = 4.8f,
-        reviewCount = 127,
-        donatedCount = 42,
-        contactInfo = "+1 234-567-8900\nhopechildren@email.com",
-        address = "123 Hope Street, City, State 12345",
-        establishedYear = 2010,
-        childrenCount = 35
-    )
-
-    val neededItems = listOf(
-        NeededItem("Rice", 50.0, "kg", UrgencyLevel.HIGH, "Staple food for daily meals"),
-        NeededItem("Winter Jackets", 25.0, "pieces", UrgencyLevel.HIGH, "For winter season"),
-        NeededItem("School Books", 40.0, "sets", UrgencyLevel.MEDIUM, "For education program"),
-        NeededItem("Milk Powder", 30.0, "kg", UrgencyLevel.HIGH, "For younger children"),
-        NeededItem("Toys", 20.0, "pieces", UrgencyLevel.LOW, "Recreational activities"),
-        NeededItem("Blankets", 35.0, "pieces", UrgencyLevel.MEDIUM, "For colder nights")
-    )
+    val uiState = viewModel.uiState
 
     Scaffold(
         topBar = {
@@ -64,9 +45,9 @@ fun OrphanageDetailScreen(
                         onClick = { /* Share orphanage */ }
                     ),
                     AppBarAction(
-                        icon = Icons.Default.Favorite,
+                        icon = if (uiState.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = "Favorite",
-                        onClick = { /* Add to favorites */ }
+                        onClick = { viewModel.toggleFavorite() }
                     )
                 )
             )
@@ -85,28 +66,79 @@ fun OrphanageDetailScreen(
                     )
                 )
         ) {
-        item {
-            HeaderSection(orphanage = orphanage)
-        }
+            // Error Message
+            uiState.error?.let { error ->
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.weight(1f)
+                            )
+                            IconButton(onClick = { viewModel.clearError() }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Dismiss",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
-        item {
-            DescriptionSection(orphanage = orphanage)
-        }
+            // Loading Indicator
+            if (uiState.isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(64.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else {
+                uiState.orphanage?.let { orphanage ->
+                    item {
+                        HeaderSection(orphanage = orphanage)
+                    }
 
-        item {
-            ItemsNeededSection(neededItems = neededItems)
-        }
+                    item {
+                        DescriptionSection(orphanage = orphanage)
+                    }
 
-        item {
-            ContactInfoSection(orphanage = orphanage)
-        }
+                    if (uiState.needs.isNotEmpty()) {
+                        item {
+                            ItemsNeededSection(needs = uiState.needs)
+                        }
+                    }
 
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            DonateButtonSection(onDonateClick = onDonateClick)
-            Spacer(modifier = Modifier.height(32.dp))
+                    item {
+                        ContactInfoSection(orphanage = orphanage)
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        DonateButtonSection(onDonateClick = onDonateClick)
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+            }
         }
-    }
     }
 }
 
