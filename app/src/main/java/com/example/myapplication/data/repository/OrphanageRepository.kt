@@ -14,6 +14,7 @@ import kotlinx.serialization.SerialName
 @Serializable
 data class OrphanageDto(
     val id: String,
+    @SerialName("orphanage_name")
     val orphanageName: String,
     val description: String? = null,
     val address: String,
@@ -22,13 +23,19 @@ data class OrphanageDto(
     val country: String,
     val latitude: Double? = null,
     val longitude: Double? = null,
+    @SerialName("contact_phone")
     val contactPhone: String? = null,
+    @SerialName("contact_email")
     val contactEmail: String? = null,
     val website: String? = null,
+    @SerialName("number_of_children")
     val numberOfChildren: Int = 0,
+    @SerialName("total_donations_received")
     val totalDonationsReceived: Double = 0.0,
     val rating: Double = 0.0,
+    @SerialName("rating_count")
     val ratingCount: Int = 0,
+    @SerialName("image_url")
     val imageUrl: String? = null,
     val verified: Boolean = false
 )
