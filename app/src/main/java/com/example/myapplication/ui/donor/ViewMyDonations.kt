@@ -58,75 +58,22 @@ class ViewMyDonationsActivity : ComponentActivity() {
 }
 
 @Composable
-fun ViewMyDonationsScreen(onBackClick: () -> Unit = {}) {
+fun ViewMyDonationsScreen(
+    viewModel: ViewMyDonationsViewModel,
+    onBackClick: () -> Unit = {}
+) {
+    val uiState = viewModel.uiState
     var searchQuery by remember { mutableStateOf("") }
     
-    // Sample donation data - replace with actual data from your backend/database
-    val sampleDonations = remember {
-        listOf(
-            Donation(
-                id = "1",
-                orphanageName = "Hope Children's Home",
-                itemCategory = "Clothes",
-                itemSubcategory = "Children's Clothing",
-                status = DonationStatus.RECEIVED,
-                daysAgo = 3,
-                condition = "Good Condition",
-                description = "Winter jackets and sweaters"
-            ),
-            Donation(
-                id = "2",
-                orphanageName = "Sunshine Orphanage",
-                itemCategory = "Books",
-                itemSubcategory = "Educational",
-                status = DonationStatus.PENDING,
-                daysAgo = 1,
-                condition = "Like New",
-                description = "Mathematics and Science textbooks"
-            ),
-            Donation(
-                id = "3",
-                orphanageName = "Little Angels Home",
-                itemCategory = "Toys",
-                itemSubcategory = "Educational Toys",
-                status = DonationStatus.IN_TRANSIT,
-                daysAgo = 5,
-                condition = "Brand New",
-                description = "Building blocks and puzzles"
-            ),
-            Donation(
-                id = "4",
-                orphanageName = "St. Mary's Children Center",
-                itemCategory = "Food",
-                itemSubcategory = "Canned Food",
-                status = DonationStatus.RECEIVED,
-                daysAgo = 7,
-                condition = "Brand New",
-                description = "Canned vegetables and fruits"
-            ),
-            Donation(
-                id = "5",
-                orphanageName = "Rainbow Kids Home",
-                itemCategory = "Electronics",
-                itemSubcategory = "Tablets",
-                status = DonationStatus.CANCELLED,
-                daysAgo = 10,
-                condition = "Good Condition",
-                description = "Educational tablets for learning"
-            )
-        )
-    }
-    
     // Filter donations based on search query
-    val filteredDonations = remember(searchQuery, sampleDonations) {
+    val filteredDonations = remember(searchQuery, uiState.filteredDonations) {
         if (searchQuery.isBlank()) {
-            sampleDonations
+            uiState.filteredDonations
         } else {
-            sampleDonations.filter { donation ->
+            uiState.filteredDonations.filter { donation ->
                 donation.orphanageName.contains(searchQuery, ignoreCase = true) ||
-                donation.itemCategory.contains(searchQuery, ignoreCase = true) ||
-                donation.itemSubcategory.contains(searchQuery, ignoreCase = true) ||
-                donation.status.displayName.contains(searchQuery, ignoreCase = true)
+                donation.category.contains(searchQuery, ignoreCase = true) ||
+                donation.subCategory.contains(searchQuery, ignoreCase = true)
             }
         }
     }
@@ -186,8 +133,48 @@ fun ViewMyDonationsScreen(onBackClick: () -> Unit = {}) {
             )
         )
 
-        // Donations List
-        if (filteredDonations.isEmpty()) {
+        // Error Message
+        uiState.error?.let { error ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { viewModel.clearError() }) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Dismiss",
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+        }
+
+        // Loading Indicator
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (filteredDonations.isEmpty()) {
             // Empty state
             Column(
                 modifier = Modifier
@@ -227,7 +214,7 @@ fun ViewMyDonationsScreen(onBackClick: () -> Unit = {}) {
 }
 
 @Composable
-fun DonationCard(donation: Donation) {
+fun DonationCard(donation: com.example.myapplication.data.repository.Donation) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -258,13 +245,13 @@ fun DonationCard(donation: Donation) {
                 // Status Badge
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = donation.status.color.copy(alpha = 0.1f)
+                    color = getStatusColor(donation.status).copy(alpha = 0.1f)
                 ) {
                     Text(
-                        text = donation.status.displayName,
+                        text = donation.status.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() },
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelMedium,
-                        color = donation.status.color,
+                        color = getStatusColor(donation.status),
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -278,14 +265,14 @@ fun DonationCard(donation: Donation) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = getIconForCategory(donation.itemCategory),
-                    contentDescription = donation.itemCategory,
+                    imageVector = getIconForCategory(donation.category),
+                    contentDescription = donation.category,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "${donation.itemCategory} - ${donation.itemSubcategory}",
+                    text = "${donation.category} - ${donation.subCategory}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Medium
@@ -305,7 +292,7 @@ fun DonationCard(donation: Donation) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Footer with condition and time
+            // Footer with condition and quantity
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -332,20 +319,32 @@ fun DonationCard(donation: Donation) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = "Time",
+                        imageVector = Icons.Default.Inventory,
+                        contentDescription = "Quantity",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${donation.daysAgo} ${if (donation.daysAgo == 1) "day" else "days"} ago",
+                        text = "Qty: ${donation.quantity}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+fun getStatusColor(status: com.example.myapplication.data.repository.DonationStatus): Color {
+    return when (status) {
+        com.example.myapplication.data.repository.DonationStatus.PENDING -> Color(0xFFFF9800)
+        com.example.myapplication.data.repository.DonationStatus.ACCEPTED -> Color(0xFF2196F3)
+        com.example.myapplication.data.repository.DonationStatus.IN_TRANSIT -> Color(0xFF2196F3)
+        com.example.myapplication.data.repository.DonationStatus.COMPLETED -> Color(0xFF4CAF50)
+        com.example.myapplication.data.repository.DonationStatus.CANCELLED -> Color(0xFFF44336)
+        com.example.myapplication.data.repository.DonationStatus.DECLINED -> Color(0xFFF44336)
     }
 }
 
