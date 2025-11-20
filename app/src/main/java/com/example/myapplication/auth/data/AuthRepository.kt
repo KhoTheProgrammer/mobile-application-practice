@@ -4,8 +4,6 @@ import com.example.myapplication.core.data.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 
 sealed class AuthResult {
     data class Success(val user: User) : AuthResult()
@@ -29,7 +27,7 @@ class AuthRepository {
             }
 
             // Get user ID from current session
-            val userId = client.auth.currentUserOrNull()?.id 
+            val userId = client.auth.currentUserOrNull()?.id
                 ?: throw Exception("User ID not found. Please check if email confirmation is required.")
 
             // Create profile
@@ -62,6 +60,9 @@ class AuthRepository {
                         )
                     )
                 }
+                UserType.ADMIN -> {
+                    // No admin-specific profile to create
+                }
             }
 
             AuthResult.Success(
@@ -85,7 +86,7 @@ class AuthRepository {
                 this.password = password
             }
 
-            val userId = client.auth.currentUserOrNull()?.id?.toString()
+            val userId = client.auth.currentUserOrNull()?.id
                 ?: throw Exception("User not found after sign in")
 
             // Fetch user profile
@@ -97,14 +98,19 @@ class AuthRepository {
                 }
                 .decodeList<Profile>()
 
-            val profile = profiles.firstOrNull() 
+            val profile = profiles.firstOrNull()
                 ?: throw Exception("Profile not found. Please sign up first.")
 
             AuthResult.Success(
                 User(
                     id = profile.id,
                     email = profile.email,
-                    userType = if (profile.user_type == "donor") UserType.DONOR else UserType.ORPHANAGE,
+                    userType = when (profile.user_type) {
+                        "donor" -> UserType.DONOR
+                        "orphanage" -> UserType.ORPHANAGE
+                        "admin" -> UserType.ADMIN
+                        else -> throw Exception("Invalid user type")
+                    },
                     fullName = profile.full_name,
                     phone = profile.phone,
                     avatarUrl = profile.avatar_url,
@@ -127,7 +133,7 @@ class AuthRepository {
 
     suspend fun getCurrentUser(): User? {
         return try {
-            val userId = client.auth.currentUserOrNull()?.id?.toString() ?: return null
+            val userId = client.auth.currentUserOrNull()?.id ?: return null
 
             val profiles = client.from("profiles")
                 .select {
@@ -142,7 +148,12 @@ class AuthRepository {
             User(
                 id = profile.id,
                 email = profile.email,
-                userType = if (profile.user_type == "donor") UserType.DONOR else UserType.ORPHANAGE,
+                userType = when (profile.user_type) {
+                    "donor" -> UserType.DONOR
+                    "orphanage" -> UserType.ORPHANAGE
+                    "admin" -> UserType.ADMIN
+                    else -> UserType.DONOR
+                },
                 fullName = profile.full_name,
                 phone = profile.phone,
                 avatarUrl = profile.avatar_url,
@@ -153,74 +164,43 @@ class AuthRepository {
         }
     }
 
-    fun isUserLoggedIn(): Boolean {
-        return client.auth.currentUserOrNull() != null
-    }
-
-    suspend fun resetPassword(email: String): Result<Unit> {
-        return try {
-            client.auth.resetPasswordForEmail(email)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
     suspend fun updateProfile(
         fullName: String? = null,
         phone: String? = null,
         avatarUrl: String? = null
     ): Result<Unit> {
         return try {
-            val userId = client.auth.currentUserOrNull()?.id?.toString()
+            val userId = client.auth.currentUserOrNull()?.id
                 ?: throw Exception("User not logged in")
 
-            val updates = mutableMapOf<String, Any>()
-            fullName?.let { updates["full_name"] = it }
-            phone?.let { updates["phone"] = it }
-            avatarUrl?.let { updates["avatar_url"] = it }
+            android.util.Log.d("AuthRepository", "Updating profile for user: $userId")
+            android.util.Log.d("AuthRepository", "fullName: $fullName, phone: $phone")
+
+            // Build update map with only non-null values
+            val updates = buildMap {
+                fullName?.let { put("full_name", it) }
+                phone?.let { put("phone", it) }
+                avatarUrl?.let { put("avatar_url", it) }
+            }
 
             if (updates.isNotEmpty()) {
+                android.util.Log.d("AuthRepository", "Updates to apply: $updates")
+
                 client.from("profiles").update(updates) {
                     filter {
                         eq("id", userId)
                     }
                 }
+
+                android.util.Log.d("AuthRepository", "Profile updated successfully")
+            } else {
+                android.util.Log.d("AuthRepository", "No updates to apply")
             }
 
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("AuthRepository", "Failed to update profile", e)
             Result.failure(e)
-        }
-    }
-
-    suspend fun getDonorProfile(userId: String): DonorProfile? {
-        return try {
-            val profiles = client.from("donor_profiles")
-                .select {
-                    filter {
-                        eq("id", userId)
-                    }
-                }
-                .decodeList<DonorProfile>()
-            profiles.firstOrNull()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    suspend fun getOrphanageProfile(userId: String): OrphanageProfile? {
-        return try {
-            val profiles = client.from("orphanage_profiles")
-                .select {
-                    filter {
-                        eq("id", userId)
-                    }
-                }
-                .decodeList<OrphanageProfile>()
-            profiles.firstOrNull()
-        } catch (e: Exception) {
-            null
         }
     }
 }

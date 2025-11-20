@@ -15,7 +15,8 @@ data class User(
 
 enum class UserType {
     DONOR,
-    ORPHANAGE
+    ORPHANAGE,
+    ADMIN
 }
 
 @Serializable

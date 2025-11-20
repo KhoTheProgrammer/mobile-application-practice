@@ -31,6 +31,7 @@ import com.example.myapplication.auth.domain.AuthViewModel
 fun AuthScreen(
     onNavigateToDonor: () -> Unit,
     onNavigateToOrphanage: () -> Unit,
+    onNavigateToAdmin: () -> Unit = {},
     viewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
@@ -263,6 +264,7 @@ fun AuthScreen(
                                             when (type) {
                                                 UserType.DONOR -> onNavigateToDonor()
                                                 UserType.ORPHANAGE -> onNavigateToOrphanage()
+                                                UserType.ADMIN -> onNavigateToAdmin()
                                             }
                                         }
                                     )
@@ -283,6 +285,10 @@ fun AuthScreen(
                                             UserType.ORPHANAGE -> {
                                                 android.util.Log.d("AuthScreen", "Navigating to Orphanage")
                                                 onNavigateToOrphanage()
+                                            }
+                                            UserType.ADMIN -> {
+                                                android.util.Log.d("AuthScreen", "Navigating to Admin")
+                                                onNavigateToAdmin()
                                             }
                                         }
                                     }
