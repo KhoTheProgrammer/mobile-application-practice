@@ -148,7 +148,11 @@ fun FiltersSection(
 }
 
 @Composable
-fun IncomingDonationCard(donation: IncomingDonation) {
+fun IncomingDonationCard(
+    donation: IncomingDonation,
+    onAccept: () -> Unit = {},
+    onDecline: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -302,7 +306,7 @@ fun IncomingDonationCard(donation: IncomingDonation) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { /* Handle reject */ },
+                        onClick = onDecline,
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.error
@@ -312,7 +316,7 @@ fun IncomingDonationCard(donation: IncomingDonation) {
                     }
 
                     Button(
-                        onClick = { /* Handle accept */ },
+                        onClick = onAccept,
                         modifier = Modifier.weight(1f)
                     ) {
                         Text("Accept")
@@ -489,7 +493,17 @@ fun ViewAllDonationsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(filteredDonations) { donation ->
-                        IncomingDonationCard(donation = donation)
+                        IncomingDonationCard(
+                            donation = donation,
+                            onAccept = {
+                                android.util.Log.d("ViewAllDonations", "Accept clicked for donation: ${donation.id}")
+                                viewModel.confirmDonation(donation.id)
+                            },
+                            onDecline = {
+                                android.util.Log.d("ViewAllDonations", "Decline clicked for donation: ${donation.id}")
+                                viewModel.cancelDonation(donation.id)
+                            }
+                        )
                     }
                 }
             }

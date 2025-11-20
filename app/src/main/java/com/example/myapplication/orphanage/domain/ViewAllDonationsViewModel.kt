@@ -126,10 +126,12 @@ class ViewAllDonationsViewModel(
 
     fun confirmDonation(donationId: String) {
         viewModelScope.launch {
+            android.util.Log.d("ViewAllDonationsVM", "confirmDonation called for: $donationId")
             uiState = uiState.copy(isLoading = true, error = null)
 
             when (val result = donationRepository.confirmDonation(donationId)) {
                 is DonationResult.Success -> {
+                    android.util.Log.d("ViewAllDonationsVM", "Donation confirmed successfully")
                     uiState = uiState.copy(
                         isLoading = false,
                         error = null
@@ -139,6 +141,7 @@ class ViewAllDonationsViewModel(
                     loadStatistics()
                 }
                 is DonationResult.Error -> {
+                    android.util.Log.e("ViewAllDonationsVM", "Failed to confirm donation: ${result.message}")
                     uiState = uiState.copy(
                         isLoading = false,
                         error = result.message
@@ -164,6 +167,33 @@ class ViewAllDonationsViewModel(
                     loadTopDonors()
                 }
                 is DonationResult.Error -> {
+                    uiState = uiState.copy(
+                        isLoading = false,
+                        error = result.message
+                    )
+                }
+            }
+        }
+    }
+
+    fun cancelDonation(donationId: String) {
+        viewModelScope.launch {
+            android.util.Log.d("ViewAllDonationsVM", "cancelDonation called for: $donationId")
+            uiState = uiState.copy(isLoading = true, error = null)
+
+            when (val result = donationRepository.cancelDonation(donationId)) {
+                is DonationResult.Success -> {
+                    android.util.Log.d("ViewAllDonationsVM", "Donation cancelled successfully")
+                    uiState = uiState.copy(
+                        isLoading = false,
+                        error = null
+                    )
+                    // Reload donations to reflect the change
+                    loadDonations()
+                    loadStatistics()
+                }
+                is DonationResult.Error -> {
+                    android.util.Log.e("ViewAllDonationsVM", "Failed to cancel donation: ${result.message}")
                     uiState = uiState.copy(
                         isLoading = false,
                         error = result.message

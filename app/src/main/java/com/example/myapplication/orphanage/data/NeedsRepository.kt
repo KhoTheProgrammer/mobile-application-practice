@@ -168,11 +168,13 @@ class NeedsRepository {
         description: String? = null
     ): NeedsResult<Unit> {
         return try {
-            val updates = mutableMapOf<String, Any>()
-            itemName?.let { updates["item_name"] = it }
-            quantity?.let { updates["quantity"] = it }
-            priority?.let { updates["priority"] = it.name }
-            description?.let { updates["description"] = it }
+            val updates = buildMap {
+                itemName?.let { put("item_name", it) }
+                quantity?.let { put("quantity", it.toString()) }
+                priority?.let { put("priority", it.name) }
+                description?.let { put("description", it) }
+            }
+            
             if (updates.isNotEmpty()) {
                 client.from("needs").update(updates) {
                     filter {

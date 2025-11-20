@@ -289,12 +289,11 @@ class DonationRepository {
         status: DonationStatus
     ): DonationResult<Unit> {
         return try {
-            val updates = mutableMapOf<String, Any>(
-                "status" to status.name.lowercase()
-            )
-
-            if (status == DonationStatus.COMPLETED) {
-                updates["completed_at"] = "now()"
+            val updates = buildMap {
+                put("status", status.name.lowercase())
+                if (status == DonationStatus.COMPLETED) {
+                    put("completed_at", "now()")
+                }
             }
 
             client.from("donations").update(updates) {
