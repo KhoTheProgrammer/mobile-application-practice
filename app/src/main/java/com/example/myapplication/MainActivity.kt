@@ -44,9 +44,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.rememberNavController
-import com.example.myapplication.data.remote.SupabaseTest
-import com.example.myapplication.navigation.NavGraph
-import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.core.ui.NavGraph
+import com.example.myapplication.core.ui.theme.MyApplicationTheme
 
 
 class MainActivity : ComponentActivity() {
