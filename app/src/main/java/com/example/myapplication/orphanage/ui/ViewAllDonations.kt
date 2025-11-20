@@ -324,97 +324,55 @@ fun IncomingDonationCard(donation: IncomingDonation) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
+fun ViewAllDonationsScreen(
+    orphanageId: String,
+    viewModel: com.example.myapplication.orphanage.domain.ViewAllDonationsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+        factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+            override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return com.example.myapplication.orphanage.domain.ViewAllDonationsViewModel(orphanageId) as T
+            }
+        }
+    ),
+    onBackClick: () -> Unit = {}
+) {
     var searchQuery by remember { mutableStateOf("") }
     var selectedStatusFilter by remember { mutableStateOf("All") }
     var selectedCategoryFilter by remember { mutableStateOf("All") }
     var showFilters by remember { mutableStateOf(false) }
 
-    // Sample donation data - replace with actual data from your backend/database
-    val sampleDonations = remember {
-        listOf(
+    val uiState = viewModel.uiState
+    
+    // Convert real donations to display format
+    val displayDonations = remember(uiState.donations) {
+        uiState.donations.map { donation ->
             IncomingDonation(
-                id = "1",
-                donorName = "John Doe",
-                donorPhone = "+265 991 234 567",
-                itemCategory = "Food",
-                itemSubcategory = "Grains",
-                itemDescription = "50kg rice, 20kg maize flour, cooking oil",
-                condition = "Brand New",
-                status = DonationStatus.PENDING,
-                submittedDate = "2024-01-15",
-                estimatedDelivery = "2024-01-17",
-                pickupAddress = "Area 25, Lilongwe",
-                willDropOff = true,
-                priority = Priority.HIGH
-            ),
-            IncomingDonation(
-                id = "2",
-                donorName = "Sarah Wilson",
-                donorPhone = "+265 999 876 543",
-                itemCategory = "Clothes",
-                itemSubcategory = "Children's Clothing",
-                itemDescription = "Winter jackets, sweaters, school uniforms",
-                condition = "Good Condition",
-                status = DonationStatus.IN_TRANSIT,
-                submittedDate = "2024-01-14",
-                estimatedDelivery = "2024-01-16",
-                pickupAddress = "Area 47, Lilongwe",
+                id = donation.id,
+                donorName = "Donor #${donation.donorId.take(8)}",
+                donorPhone = "", // Not available in current data model
+                itemCategory = donation.categoryName.ifEmpty { donation.categoryId },
+                itemSubcategory = donation.donationType.name,
+                itemDescription = donation.itemDescription ?: "${donation.amount} ${donation.currency}",
+                condition = "Good", // Not available in current data model
+                status = when (donation.status) {
+                    com.example.myapplication.orphanage.data.DonationStatus.PENDING -> DonationStatus.PENDING
+                    com.example.myapplication.orphanage.data.DonationStatus.CONFIRMED -> DonationStatus.IN_TRANSIT
+                    com.example.myapplication.orphanage.data.DonationStatus.COMPLETED -> DonationStatus.RECEIVED
+                    com.example.myapplication.orphanage.data.DonationStatus.CANCELLED -> DonationStatus.CANCELLED
+                },
+                submittedDate = donation.createdAt ?: "",
+                estimatedDelivery = "", // Not available
+                pickupAddress = "", // Not available
                 willDropOff = false,
                 priority = Priority.NORMAL
-            ),
-            IncomingDonation(
-                id = "3",
-                donorName = "Mike Johnson",
-                donorPhone = "+265 888 123 456",
-                itemCategory = "Books",
-                itemSubcategory = "Educational",
-                itemDescription = "Mathematics and English textbooks for primary school",
-                condition = "Like New",
-                status = DonationStatus.RECEIVED,
-                submittedDate = "2024-01-13",
-                estimatedDelivery = "2024-01-15",
-                pickupAddress = "City Centre, Blantyre",
-                willDropOff = true,
-                priority = Priority.URGENT
-            ),
-            IncomingDonation(
-                id = "4",
-                donorName = "Grace Banda",
-                donorPhone = "+265 777 654 321",
-                itemCategory = "Toys",
-                itemSubcategory = "Educational Toys",
-                itemDescription = "Building blocks, puzzles, educational games",
-                condition = "Brand New",
-                status = DonationStatus.PENDING,
-                submittedDate = "2024-01-16",
-                estimatedDelivery = "2024-01-18",
-                pickupAddress = "Ndirande, Blantyre",
-                willDropOff = false,
-                priority = Priority.LOW
-            ),
-            IncomingDonation(
-                id = "5",
-                donorName = "Peter Mwale",
-                donorPhone = "+265 666 789 012",
-                itemCategory = "Electronics",
-                itemSubcategory = "Tablets",
-                itemDescription = "5 educational tablets with learning apps",
-                condition = "Good Condition",
-                status = DonationStatus.CANCELLED,
-                submittedDate = "2024-01-12",
-                estimatedDelivery = "2024-01-14",
-                pickupAddress = "Mzuzu City",
-                willDropOff = true,
-                priority = Priority.HIGH
             )
-        )
+        }
     }
 
     // Filter donations
     val filteredDonations =
-        remember(searchQuery, selectedStatusFilter, selectedCategoryFilter, sampleDonations) {
-            sampleDonations.filter { donation ->
+        remember(searchQuery, selectedStatusFilter, selectedCategoryFilter, displayDonations) {
+            displayDonations.filter { donation ->
                 val matchesSearch = if (searchQuery.isBlank()) true else {
                     donation.donorName.contains(searchQuery, ignoreCase = true) ||
                             donation.itemCategory.contains(searchQuery, ignoreCase = true) ||
@@ -543,6 +501,6 @@ fun ViewAllDonationsScreen(onBackClick: () -> Unit = {}) {
 @Composable
 fun ViewAllDonationsScreenPreview() {
     MyApplicationTheme {
-        ViewAllDonationsScreen()
+        ViewAllDonationsScreen(orphanageId = "preview-orphanage-id")
     }
 }
