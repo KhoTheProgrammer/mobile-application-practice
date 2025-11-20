@@ -25,6 +25,8 @@ import com.example.myapplication.donor.domain.ViewMyDonationsViewModelFactory
 import com.example.myapplication.orphanage.ui.OrphanageHomeScreen
 import com.example.myapplication.orphanage.ui.UpdateNeedsScreen
 import com.example.myapplication.orphanage.ui.ViewAllDonationsScreen
+import com.example.myapplication.profile.ui.ProfileScreen
+import com.example.myapplication.notifications.ui.NotificationsScreen
 
 // Define all routes as a sealed class for type safety
 sealed class Screen(val route: String) {
@@ -32,6 +34,9 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object DonorHome : Screen("donor_home")
     object OrphanageHome : Screen("orphanage_home")
+    object AdminDashboard : Screen("admin_dashboard")
+    object AdminUserManagement : Screen("admin_user_management")
+    object AdminOrphanageVerification : Screen("admin_orphanage_verification")
     object OrphanageDetail : Screen("orphanage_detail/{orphanageId}") {
         fun createRoute(orphanageId: String) = "orphanage_detail/$orphanageId"
     }
@@ -42,6 +47,8 @@ sealed class Screen(val route: String) {
     object ViewMyDonations : Screen("view_my_donations")
     object ViewAllDonations : Screen("view_all_donations")
     object UpdateNeeds : Screen("update_needs")
+    object Profile : Screen("profile")
+    object Notifications : Screen("notifications")
 }
 
 @Composable
@@ -79,6 +86,13 @@ fun NavGraph(
                         popUpTo(Screen.Landing.route) { inclusive = true }
                     }
                     android.util.Log.d("NavGraph", "Navigation to OrphanageHome completed")
+                },
+                onNavigateToAdmin = {
+                    android.util.Log.d("NavGraph", "onNavigateToAdmin called")
+                    navController.navigate(Screen.AdminDashboard.route) {
+                        popUpTo(Screen.Landing.route) { inclusive = true }
+                    }
+                    android.util.Log.d("NavGraph", "Navigation to AdminDashboard completed")
                 }
             )
         }
@@ -87,6 +101,12 @@ fun NavGraph(
             DonorHomeScreen(
                 onOrphanageClick = { orphanageId ->
                     navController.navigate(Screen.OrphanageDetail.createRoute(orphanageId))
+                },
+                onProfileClick = {
+                    navController.navigate(Screen.Profile.route)
+                },
+                onNotificationsClick = {
+                    navController.navigate(Screen.Notifications.route)
                 },
                 onLogout = {
                     authViewModel.logout(
@@ -132,6 +152,12 @@ fun NavGraph(
                     },
                     onUpdateNeeds = {
                         navController.navigate(Screen.UpdateNeeds.route)
+                    },
+                    onProfileClick = {
+                        navController.navigate(Screen.Profile.route)
+                    },
+                    onNotificationsClick = {
+                        navController.navigate(Screen.Notifications.route)
                     },
                     onLogout = {
                         authViewModel.logout(
@@ -255,6 +281,91 @@ fun NavGraph(
             if (currentUserId != null) {
                 UpdateNeedsScreen(
                     orphanageId = currentUserId,
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToChangePassword = {
+                    // TODO: Add change password screen route
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Notifications.route) {
+            NotificationsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Admin Routes
+        composable(Screen.AdminDashboard.route) {
+            val currentUserId = authViewModel.uiState.currentUserId
+            if (currentUserId != null) {
+                com.example.myapplication.admin.ui.AdminDashboardScreen(
+                    onNavigateToUsers = {
+                        navController.navigate(Screen.AdminUserManagement.route)
+                    },
+                    onNavigateToVerifications = {
+                        navController.navigate(Screen.AdminOrphanageVerification.route)
+                    },
+                    onNavigateToDonations = {
+                        navController.navigate(Screen.ViewAllDonations.route)
+                    },
+                    onProfileClick = {
+                        navController.navigate(Screen.Profile.route)
+                    },
+                    onLogout = {
+                        authViewModel.logout(
+                            onSuccess = {
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            },
+                            onError = { _ ->
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+        }
+
+        composable(Screen.AdminUserManagement.route) {
+            com.example.myapplication.admin.ui.UserManagementScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.AdminOrphanageVerification.route) {
+            val currentUserId = authViewModel.uiState.currentUserId
+            if (currentUserId != null) {
+                com.example.myapplication.admin.ui.OrphanageVerificationScreen(
+                    adminId = currentUserId,
                     onBackClick = {
                         navController.popBackStack()
                     }
