@@ -203,7 +203,7 @@ fun ProfileScreen(
                         onValueChange = viewModel::onEmailChange,
                         label = "Email",
                         icon = Icons.Default.Email,
-                        enabled = uiState.isEditMode,
+                        enabled = false, // Email cannot be changed
                         keyboardType = KeyboardType.Email,
                         error = uiState.emailError
                     )

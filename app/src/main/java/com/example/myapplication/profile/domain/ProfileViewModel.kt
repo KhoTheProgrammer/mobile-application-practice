@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.profile.data.Address
 import com.example.myapplication.profile.data.UserProfile
 import com.example.myapplication.auth.data.UserType
-import kotlinx.coroutines.delay
+import com.example.myapplication.auth.data.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
  * Handles profile viewing and editing for both Donor and Orphanage users
  */
 class ProfileViewModel : ViewModel() {
+    private val authRepository = AuthRepository()
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
@@ -30,43 +31,54 @@ class ProfileViewModel : ViewModel() {
     }
 
     /**
-     * Load user profile - in real app, fetch from repository
+     * Load user profile from Supabase
      */
     private fun loadUserProfile() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             
-            // Simulate API call
-            delay(1000)
-            
-            // Mock user profile - replace with actual data from repository
-            val mockProfile = UserProfile(
-                id = "user123",
-                email = "donor@example.com",
-                userType = UserType.DONOR,
-                fullName = "John Doe",
-                phoneNumber = "+1234567890",
-                address = Address(
-                    street = "123 Main St",
-                    city = "New York",
-                    state = "NY",
-                    zipCode = "10001",
-                    country = "USA"
-                )
-            )
-            
-            _uiState.update { it.copy(
-                isLoading = false,
-                userProfile = mockProfile,
-                fullName = mockProfile.fullName,
-                email = mockProfile.email,
-                phoneNumber = mockProfile.phoneNumber,
-                street = mockProfile.address.street,
-                city = mockProfile.address.city,
-                state = mockProfile.address.state,
-                zipCode = mockProfile.address.zipCode,
-                country = mockProfile.address.country
-            )}
+            try {
+                val user = authRepository.getCurrentUser()
+                
+                if (user != null) {
+                    // Create UserProfile from User data
+                    val profile = UserProfile(
+                        id = user.id,
+                        email = user.email,
+                        userType = user.userType,
+                        fullName = user.fullName,
+                        phoneNumber = user.phone ?: "",
+                        address = Address(
+                            street = "",
+                            city = "",
+                            state = "",
+                            zipCode = "",
+                            country = ""
+                        )
+                    )
+                    
+                    _uiState.update { it.copy(
+                        isLoading = false,
+                        userProfile = profile,
+                        fullName = profile.fullName,
+                        email = profile.email,
+                        phoneNumber = profile.phoneNumber,
+                        street = profile.address.street,
+                        city = profile.address.city,
+                        state = profile.address.state,
+                        zipCode = profile.address.zipCode,
+                        country = profile.address.country
+                    )}
+                } else {
+                    _uiState.update { it.copy(
+                        isLoading = false
+                    )}
+                    _events.value = ProfileEvent.ShowMessage("Failed to load profile")
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
+                _events.value = ProfileEvent.ShowMessage("Error loading profile: ${e.message}")
+            }
         }
     }
 
@@ -78,8 +90,9 @@ class ProfileViewModel : ViewModel() {
         _uiState.update { it.copy(fullName = name, fullNameError = null) }
     }
 
+    // Email should not be editable - this function is kept for compatibility but doesn't update
     fun onEmailChange(email: String) {
-        _uiState.update { it.copy(email = email, emailError = null) }
+        // Email cannot be changed - do nothing
     }
 
     fun onPhoneNumberChange(phone: String) {
@@ -144,8 +157,14 @@ class ProfileViewModel : ViewModel() {
     fun onLogoutConfirmed() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            delay(500) // Simulate logout
-            _events.value = ProfileEvent.NavigateToLogin
+            
+            try {
+                authRepository.signOut()
+                _events.value = ProfileEvent.NavigateToLogin
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
+                _events.value = ProfileEvent.ShowMessage("Logout failed: ${e.message}")
+            }
         }
     }
 
@@ -156,15 +175,6 @@ class ProfileViewModel : ViewModel() {
         // Validate full name
         if (state.fullName.isBlank()) {
             _uiState.update { it.copy(fullNameError = "Name is required") }
-            isValid = false
-        }
-
-        // Validate email
-        if (state.email.isBlank()) {
-            _uiState.update { it.copy(emailError = "Email is required") }
-            isValid = false
-        } else if (!Patterns.EMAIL_ADDRESS.matcher(state.email).matches()) {
-            _uiState.update { it.copy(emailError = "Invalid email format") }
             isValid = false
         }
 
@@ -181,33 +191,46 @@ class ProfileViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             
-            // Simulate API call
-            delay(1500)
-            
-            // Update the profile
-            val currentProfile = _uiState.value.userProfile
-            if (currentProfile != null) {
-                val updatedProfile = currentProfile.copy(
+            try {
+                // Update profile in Supabase (email is not updated)
+                val result = authRepository.updateProfile(
                     fullName = _uiState.value.fullName,
-                    email = _uiState.value.email,
-                    phoneNumber = _uiState.value.phoneNumber,
-                    address = Address(
-                        street = _uiState.value.street,
-                        city = _uiState.value.city,
-                        state = _uiState.value.state,
-                        zipCode = _uiState.value.zipCode,
-                        country = _uiState.value.country
-                    ),
-                    updatedAt = System.currentTimeMillis()
+                    phone = _uiState.value.phoneNumber.ifBlank { null }
                 )
                 
-                _uiState.update { it.copy(
-                    isSaving = false,
-                    isEditMode = false,
-                    userProfile = updatedProfile
-                )}
-                
-                _events.value = ProfileEvent.ShowMessage("Profile updated successfully")
+                if (result.isSuccess) {
+                    // Update the local profile
+                    val currentProfile = _uiState.value.userProfile
+                    if (currentProfile != null) {
+                        val updatedProfile = currentProfile.copy(
+                            fullName = _uiState.value.fullName,
+                            phoneNumber = _uiState.value.phoneNumber,
+                            address = Address(
+                                street = _uiState.value.street,
+                                city = _uiState.value.city,
+                                state = _uiState.value.state,
+                                zipCode = _uiState.value.zipCode,
+                                country = _uiState.value.country
+                            ),
+                            updatedAt = System.currentTimeMillis()
+                        )
+                        
+                        _uiState.update { it.copy(
+                            isSaving = false,
+                            isEditMode = false,
+                            userProfile = updatedProfile
+                        )}
+                        
+                        _events.value = ProfileEvent.ShowMessage("Profile updated successfully")
+                    }
+                } else {
+                    _uiState.update { it.copy(isSaving = false) }
+                    val errorMessage = result.exceptionOrNull()?.message ?: "Unknown error"
+                    _events.value = ProfileEvent.ShowMessage("Failed to update profile: $errorMessage")
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isSaving = false) }
+                _events.value = ProfileEvent.ShowMessage("Error updating profile: ${e.message}")
             }
         }
     }
