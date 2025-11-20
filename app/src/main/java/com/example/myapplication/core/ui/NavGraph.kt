@@ -232,11 +232,22 @@ fun NavGraph(
         }
 
         composable(Screen.ViewAllDonations.route) {
-            ViewAllDonationsScreen(
-                onBackClick = {
-                    navController.popBackStack()
+            val currentUserId = authViewModel.uiState.currentUserId
+            if (currentUserId != null) {
+                ViewAllDonationsScreen(
+                    orphanageId = currentUserId,
+                    onBackClick = {
+                        navController.popBackStack()
+                    }
+                )
+            } else {
+                // Redirect to login if no user is authenticated
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
-            )
+            }
         }
 
         composable(Screen.UpdateNeeds.route) {

@@ -61,13 +61,14 @@ enum class Priority(val displayName: String, val color: Color) {
 class ViewAllDonationsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val orphanageId = intent.getStringExtra("orphanageId") ?: ""
         setContent {
             MyApplicationTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ViewAllDonationsScreen()
+                    ViewAllDonationsScreen(orphanageId = orphanageId)
                 }
             }
         }
