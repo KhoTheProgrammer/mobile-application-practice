@@ -1,31 +1,82 @@
-package com.example.myapplication.ui.profile
+package com.example.myapplication.profile.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Pin
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.myapplication.ui.components.CustomAppBar
-import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.core.ui.components.AppBarAction
+import com.example.myapplication.core.ui.components.CustomAppBar
+import com.example.myapplication.core.ui.theme.MyApplicationTheme
+import com.example.myapplication.profile.domain.ProfileEvent
+import com.example.myapplication.profile.domain.ProfileViewModel
 
 /**
  * Profile Screen - MVVM Pattern
  * Allows users to view and edit their profile information
+ *
+ * @param viewModel The view model for this screen.
+ * @param onNavigateBack A callback to be invoked when the user navigates back.
+ * @param onNavigateToChangePassword A callback to be invoked when the user navigates to the change password screen.
+ * @param onNavigateToLogin A callback to be invoked when the user navigates to the login screen.
  */
 @Composable
 fun ProfileScreen(
@@ -36,7 +87,7 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val event by viewModel.events.collectAsState()
-    
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollState = rememberScrollState()
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -96,7 +147,7 @@ fun ProfileScreen(
                 onNavigationClick = onNavigateBack,
                 actions = if (!uiState.isEditMode) {
                     listOf(
-                        com.example.myapplication.ui.components.AppBarAction(
+                        AppBarAction(
                             icon = Icons.Default.Edit,
                             contentDescription = "Edit Profile",
                             onClick = viewModel::onEditModeToggle
@@ -298,6 +349,13 @@ fun ProfileScreen(
     }
 }
 
+/**
+ * A composable that displays the profile header.
+ *
+ * @param fullName The user's full name.
+ * @param email The user's email address.
+ * @param userType The user's user type.
+ */
 @Composable
 private fun ProfileHeader(
     fullName: String,
@@ -368,6 +426,11 @@ private fun ProfileHeader(
     }
 }
 
+/**
+ * A composable that displays a section title.
+ *
+ * @param title The title to display.
+ */
 @Composable
 private fun SectionTitle(title: String) {
     Text(
@@ -378,12 +441,24 @@ private fun SectionTitle(title: String) {
     )
 }
 
+/**
+ * A composable that displays a text field for the profile screen.
+ *
+ * @param value The current value of the text field.
+ * @param onValueChange A callback to be invoked when the value of the text field changes.
+ * @param label The label for the text field.
+ * @param icon The icon for the text field.
+ * @param enabled Whether the text field is enabled.
+ * @param modifier A modifier to be applied to the text field.
+ * @param keyboardType The keyboard type for the text field.
+ * @param error An error message to display, if any.
+ */
 @Composable
 private fun ProfileTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     enabled: Boolean,
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
@@ -398,7 +473,7 @@ private fun ProfileTextField(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (enabled) MaterialTheme.colorScheme.primary 
+                tint = if (enabled) MaterialTheme.colorScheme.primary
                       else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             )
         },
@@ -417,10 +492,18 @@ private fun ProfileTextField(
     )
 }
 
+/**
+ * A composable that displays an action button for the profile screen.
+ *
+ * @param text The text to display on the button.
+ * @param icon The icon to display on the button.
+ * @param onClick A callback to be invoked when the button is clicked.
+ * @param isDestructive Whether the action is destructive.
+ */
 @Composable
 private fun ProfileActionButton(
     text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     onClick: () -> Unit,
     isDestructive: Boolean = false
 ) {
@@ -431,9 +514,9 @@ private fun ProfileActionButton(
             .height(56.dp),
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = if (isDestructive) 
-                MaterialTheme.colorScheme.error 
-            else 
+            contentColor = if (isDestructive)
+                MaterialTheme.colorScheme.error
+            else
                 MaterialTheme.colorScheme.primary
         )
     ) {

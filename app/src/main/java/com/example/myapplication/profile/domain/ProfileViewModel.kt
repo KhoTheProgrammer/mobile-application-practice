@@ -1,11 +1,11 @@
-package com.example.myapplication.profile.ui
+package com.example.myapplication.profile.domain
 
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myapplication.data.model.user.Address
-import com.example.myapplication.data.model.user.UserProfile
-import com.example.myapplication.data.model.user.UserType
+import com.example.myapplication.profile.data.Address
+import com.example.myapplication.profile.data.UserProfile
+import com.example.myapplication.auth.data.UserType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
